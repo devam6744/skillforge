@@ -70,3 +70,11 @@ coverage/
 
 # Antigravity artifacts
 .gemini/
+
+# Product & Internal Specs (NEVER COMMIT)
+*PRD*
+*prd*
+*Blueprint*
+*blueprint*
+docs/*blueprint*
+docs/*PRD*

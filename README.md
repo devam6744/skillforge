@@ -46,5 +46,5 @@ npm install
 npm run dev
 ```
 
-## Documentation
-See [`docs/SkillForge_V1_Development_Blueprint.md`](docs/SkillForge_V1_Development_Blueprint.md) for full architectural specifications, schema design, and implementation roadmaps.
+## Documentation & Security
+See [`docs/security.md`](docs/security.md) for security guidelines and vulnerability reporting.
