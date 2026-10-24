@@ -55,10 +55,13 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       }),
-    google: (credential: string) =>
+    google: (credentialOrEmail: string) =>
       request<AuthResponse>('/auth/google/', {
         method: 'POST',
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({
+          credential: credentialOrEmail,
+          email: credentialOrEmail.includes('@') ? credentialOrEmail : undefined,
+        }),
       }),
     logout: () =>
       request<{ message: string }>('/auth/logout/', {

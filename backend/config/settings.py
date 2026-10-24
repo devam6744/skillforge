@@ -173,3 +173,7 @@ CSRF_TRUSTED_ORIGINS = [
 # AI Service Configuration
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('gemini_api')
 GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
+
+# Google OAuth Configuration
+GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID') or os.getenv('VITE_GOOGLE_CLIENT_ID')
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET')
