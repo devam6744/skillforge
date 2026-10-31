@@ -83,4 +83,37 @@ export const api = {
         body: JSON.stringify(data),
       }),
   },
+  catalog: {
+    getLanguages: () => request<import('../types').ProgrammingLanguage[]>('/catalog/languages/'),
+    getTopics: (languageSlug: string) =>
+      request<import('../types').Topic[]>(`/catalog/languages/${languageSlug}/topics/`),
+  },
+  practice: {
+    getActiveSession: () =>
+      request<{ active_session: import('../types').PracticeSession | null }>('/practice/sessions/active/'),
+    listSessions: () =>
+      request<{ count: number; results: import('../types').PracticeSession[] } | import('../types').PracticeSession[]>('/practice/sessions/'),
+    createSession: (payload: {
+      language_slug: string;
+      topic_slug?: string | null;
+      practice_type: 'TOPIC' | 'MIXED';
+      difficulty_mode: 'EASY' | 'MEDIUM' | 'HARD' | 'ADAPTIVE';
+      practice_mode: 'CODING' | 'DEBUG';
+      requested_question_count: number;
+    }) =>
+      request<import('../types').PracticeSession>('/practice/sessions/', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    getSession: (id: string) =>
+      request<import('../types').PracticeSession>(`/practice/sessions/${id}/`),
+    abandonSession: (id: string) =>
+      request<import('../types').PracticeSession>(`/practice/sessions/${id}/abandon/`, {
+        method: 'POST',
+      }),
+    completeSession: (id: string) =>
+      request<import('../types').PracticeSession>(`/practice/sessions/${id}/complete/`, {
+        method: 'POST',
+      }),
+  },
 };

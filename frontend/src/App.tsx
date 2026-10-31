@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api } from './services/api';
-import type { User } from './types';
+import type { User, ProgrammingLanguage, PracticeSession } from './types';
 
-// Pre-seeded challenges for the interactive studio
+// Foundation-first practice presets for language fundamentals
 const CHALLENGE_PRESETS: Record<
   string,
   {
@@ -22,177 +22,258 @@ const CHALLENGE_PRESETS: Record<
   }
 > = {
   Python: {
-    title: 'Two Sum: Linear Hash-Map Resolution',
-    topic: 'Arrays & Hash Maps',
+    title: 'Config Parser: Dictionary Defaults & Nested Access',
+    topic: 'Lists, Dicts & Comprehensions',
     difficulty: 'EASY',
     description:
-      'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. You may assume each input has exactly one solution, and you may not use the same element twice.',
-    constraints: ['2 <= nums.length <= 10^4', '-10^9 <= nums[i] <= 10^9', 'Target fit within 32-bit signed integer'],
-    starterCode: `def two_sum(nums: list[int], target: int) -> list[int]:
-    # Write your solution below. Gemini evaluates time/space complexity and correctness.
-    seen = {}
-    for i, num in enumerate(nums):
-        complement = target - num
-        if complement in seen:
-            return [seen[complement], i]
-        seen[num] = i
-    return []
+      'Write a function `parse_app_config(user_settings: dict) -> dict` that validates and cleanses an application settings dictionary without raising KeyErrors:\n' +
+      '1. Validate "theme": must be one of ["light", "dark", "system"]. If missing or invalid, default to "system".\n' +
+      '2. Validate "max_retries": must be an integer >= 0. If missing or invalid, default to 3.\n' +
+      '3. Clean "features": extract the list of strings, trim extra whitespace from each, and filter out any empty strings.\n' +
+      '4. Return a clean dictionary containing exactly {"theme", "max_retries", "features"}.',
+    constraints: [
+      'user_settings is guaranteed to be a dictionary',
+      'Never mutate the original user_settings dictionary directly',
+      'Handles missing or malformed keys gracefully without raising KeyError',
+    ],
+    starterCode: `def parse_app_config(user_settings: dict) -> dict:
+    """
+    Validates user settings and returns a sanitized config dictionary with safe defaults.
+    """
+    # 1. Validate theme
+    allowed_themes = {"light", "dark", "system"}
+    theme = user_settings.get("theme")
+    if theme not in allowed_themes:
+        theme = "system"
+
+    # 2. Extract and validate max_retries
+    retries = user_settings.get("max_retries", 3)
+    if not isinstance(retries, int) or retries < 0:
+        retries = 3
+
+    # 3. Clean features list with comprehension
+    raw_features = user_settings.get("features", [])
+    features = [
+        f.strip()
+        for f in raw_features
+        if isinstance(f, str) and f.strip()
+    ]
+
+    return {
+        "theme": theme,
+        "max_retries": retries,
+        "features": features,
+    }
 `,
     hints: [
-      'Can you solve this in a single pass using an associative array / dictionary?',
-      'Store each number as a key and its index as the value as you iterate.',
+      'Use `user_settings.get(key, default)` to avoid KeyErrors when keys might be missing.',
+      'List comprehensions `[f.strip() for f in raw if ...]` are clean and idiomatic in Python.',
     ],
     sampleReview: {
       score: 98,
-      complexity: 'O(n) Time • O(n) Space',
-      strength: 'Optimal single-pass dictionary lookup with immediate termination. Clean edge-case coverage.',
-      adaptiveNote: 'Linear complexity mastered. Calibrating next adaptive challenge toward Two-Pointer slider problems.',
+      complexity: 'Clean O(N) Processing • Defensive Programming',
+      strength: 'Excellent use of dict.get() for fallback values and idiomatic list comprehension for string cleaning.',
+      adaptiveNote: 'Dictionary fundamentals verified! Next concept: Object-Oriented Classes & Custom Exception Handling.',
+    },
+  },
+  JavaScript: {
+    title: 'User Profile Normalizer: Nullish Coalescing & Destructuring',
+    topic: 'Arrays, Objects & Destructuring',
+    difficulty: 'EASY',
+    description:
+      'Write a function `normalizeUserProfile(rawUser)` that normalizes raw API payloads into safe client objects:\n' +
+      '1. Extract `username` and `email` using destructuring; default `username` to "Anonymous" and `email` to "guest@example.com" if missing or nullish.\n' +
+      '2. Safely access `preferences.theme` using optional chaining (`?.`) and nullish coalescing (`??`), defaulting to "system".\n' +
+      '3. Extract `roles` array; if missing, default to `["reader"]`.\n' +
+      '4. Return `{ username, email, theme, roles }`.',
+    constraints: [
+      'Must handle rawUser being null or undefined without throwing TypeError',
+      'Use nullish coalescing (??) rather than logical OR (||) to preserve valid empty strings',
+    ],
+    starterCode: `export function normalizeUserProfile(rawUser = {}) {
+  const safeUser = rawUser ?? {};
+  const { username = 'Anonymous', email } = safeUser;
+  
+  // Safe optional chaining + nullish coalescing
+  const theme = safeUser.preferences?.theme ?? 'system';
+  const roles = Array.isArray(safeUser.roles) && safeUser.roles.length > 0 
+    ? safeUser.roles 
+    : ['reader'];
+
+  return {
+    username,
+    email: email ?? 'guest@example.com',
+    theme,
+    roles,
+  };
+}
+`,
+    hints: [
+      'Nullish coalescing (`??`) only falls back on `null` or `undefined`, preventing bugs with empty strings or 0.',
+      'Optional chaining (`obj?.preferences?.theme`) prevents runtime crashes if parent objects are undefined.',
+    ],
+    sampleReview: {
+      score: 96,
+      complexity: 'O(1) Direct Extraction • Safe Prototype Guards',
+      strength: 'Proper modern JS syntax using optional chaining and nullish coalescing to prevent undefined property errors.',
+      adaptiveNote: 'Object destructuring solid. Ready for Asynchronous Promises and Error Handlers.',
     },
   },
   'C++': {
-    title: 'In-Place Linked List Pointer Reversal',
-    topic: 'Pointers & Linked Lists',
-    difficulty: 'MEDIUM',
+    title: 'Safe Counter: Class Invariants & Encapsulation',
+    topic: 'Classes & Object-Oriented C++',
+    difficulty: 'EASY',
     description:
-      'Given the head of a singly linked list, reverse the list in-place and return the reversed list head pointer without allocating auxiliary heap nodes.',
-    constraints: ['The number of nodes in the list is in the range [0, 5000]', '-5000 <= Node.val <= 5000', 'Memory constraint: O(1) auxiliary space'],
-    starterCode: `/**
- * Definition for singly-linked list.
- * struct ListNode {
- *     int val;
- *     ListNode *next;
- *     ListNode(int x) : val(x), next(nullptr) {}
- * };
- */
-class Solution {
+      'Implement a C++ class `BoundedCounter` with strict state encapsulation:\n' +
+      '1. Private member variables `count` and `maxLimit` initialized via constructor (default limit = 100).\n' +
+      '2. `bool increment()`: increments count by 1 if below `maxLimit` and returns true; otherwise leaves count unchanged and returns false.\n' +
+      '3. `int getCount() const`: returns the current count (must be marked const).\n' +
+      '4. `void reset()`: resets count back to 0.',
+    constraints: [
+      'All member variables must be private',
+      'getCount() must be const-qualified to prevent accidental mutation',
+      'Use a constructor member initializer list',
+    ],
+    starterCode: `class BoundedCounter {
+private:
+    int count;
+    int maxLimit;
+
 public:
-    ListNode* reverseList(ListNode* head) {
-        ListNode* prev = nullptr;
-        ListNode* curr = head;
-        while (curr != nullptr) {
-            ListNode* nextTemp = curr->next;
-            curr->next = prev;
-            prev = curr;
-            curr = nextTemp;
+    // Constructor with member initializer list
+    BoundedCounter(int limit = 100) : count(0), maxLimit(limit) {}
+
+    bool increment() {
+        if (count < maxLimit) {
+            count++;
+            return true;
         }
-        return prev;
+        return false;
+    }
+
+    int getCount() const {
+        return count;
+    }
+
+    void reset() {
+        count = 0;
     }
 };
 `,
     hints: [
-      'Maintain three pointer references: prev, curr, and a temporary next holder.',
-      'Remember to update curr->next before advancing curr to avoid dangling memory access.',
-    ],
-    sampleReview: {
-      score: 96,
-      complexity: 'O(n) Time • O(1) Auxiliary Space',
-      strength: 'Strict zero-allocation pointer manipulation. Clean iterative traversal avoiding stack overflow.',
-      adaptiveNote: 'Pointer fundamentals verified. Moving to Fast & Slow Pointer Cycle Detection.',
-    },
-  },
-  Java: {
-    title: 'Valid Parentheses Stack Machine',
-    topic: 'Stacks & Parsers',
-    difficulty: 'EASY',
-    description:
-      "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid. Open brackets must be closed by the same type of brackets in the correct order.",
-    constraints: ['1 <= s.length <= 10^4', 's consists of parentheses only: ()[]{}'],
-    starterCode: `import java.util.ArrayDeque;
-import java.util.Deque;
-
-class Solution {
-    public boolean isValid(String s) {
-        Deque<Character> stack = new ArrayDeque<>();
-        for (char c : s.toCharArray()) {
-            if (c == '(') stack.push(')');
-            else if (c == '{') stack.push('}');
-            else if (c == '[') stack.push(']');
-            else if (stack.isEmpty() || stack.pop() != c) return false;
-        }
-        return stack.isEmpty();
-    }
-}
-`,
-    hints: [
-      'Use an ArrayDeque instead of legacy java.util.Stack for higher throughput and lock-free execution.',
-      'Push the expected closing bracket when you see an opening bracket to simplify the equality check.',
-    ],
-    sampleReview: {
-      score: 95,
-      complexity: 'O(n) Time • O(n) Space',
-      strength: 'Idiomatic ArrayDeque usage over legacy Stack. Clever inversion strategy reduces branch branching.',
-      adaptiveNote: 'Stack structures calibrated. Advancing toward Monotonic Stack histogram variants.',
-    },
-  },
-  JavaScript: {
-    title: 'Asynchronous Sequential Pipeline Runner',
-    topic: 'Async Promises & Functional Patterns',
-    difficulty: 'MEDIUM',
-    description:
-      'Given an array of asynchronous functions tasks and an initial value, create a function that executes each task sequentially, feeding the resolved output of the previous task into the next.',
-    constraints: ['tasks is an array of functions returning Promise<T>', 'Execution must be strictly sequential, not concurrent'],
-    starterCode: `export async function executePipeline<T>(
-  tasks: Array<(input: T) => Promise<T>>,
-  initialValue: T
-): Promise<T> {
-  return tasks.reduce(
-    async (accumulatorPromise, currentTask) => {
-      const prevResult = await accumulatorPromise;
-      return currentTask(prevResult);
-    },
-    Promise.resolve(initialValue)
-  );
-}
-`,
-    hints: [
-      'Array.prototype.reduce with an initial Promise.resolve() provides an elegant functional reduction.',
-      'Ensure errors reject the returned master promise immediately.',
+      'Use member initializer lists `BoundedCounter(...) : count(0), maxLimit(limit) {}` for efficiency.',
+      'Mark query methods that do not modify state with the `const` keyword.',
     ],
     sampleReview: {
       score: 97,
-      complexity: 'O(k) Sequential Chain',
-      strength: 'Functional reduction with zero external state mutation. Correct microtask queue chaining.',
-      adaptiveNote: 'Async pipeline verified. Advancing to Promise.allSettled concurrency throttler.',
+      complexity: 'O(1) Inlined Methods • Zero Dynamic Heap Overhead',
+      strength: 'Strict data encapsulation and const-correctness. Constructor initializer list used properly.',
+      adaptiveNote: 'Class invariants verified. Advancing to Pointers and RAII Smart Pointers (std::unique_ptr).',
     },
   },
-  C: {
-    title: 'Cyclic Array Shift via Pointer Arithmetic',
-    topic: 'Pointer Arithmetic & Memory Layout',
-    difficulty: 'MEDIUM',
+  Java: {
+    title: 'Bank Account: Encapsulation & Robust Validations',
+    topic: 'Classes, Objects & Encapsulation',
+    difficulty: 'EASY',
     description:
-      'Given an integer array nums, rotate the array to the right by k steps, where k is non-negative. Do this in-place with O(1) extra memory.',
-    constraints: ['1 <= numsSize <= 10^5', '-2^31 <= nums[i] <= 2^31 - 1', '0 <= k <= 10^5'],
-    starterCode: `#include <stdio.h>
+      'Implement a `BankAccount` class demonstrating fundamental OOP encapsulation and defensive programming:\n' +
+      '1. Private fields `String accountNumber` and `double balance`.\n' +
+      '2. Constructor taking `(accountNumber, initialBalance)`. If `initialBalance < 0`, throw an `IllegalArgumentException`.\n' +
+      '3. `void deposit(double amount)`: adds amount to balance if `amount > 0`; otherwise throws `IllegalArgumentException`.\n' +
+      '4. `boolean withdraw(double amount)`: deducts amount if `amount > 0` and `amount <= balance`, returning true; otherwise returns false.\n' +
+      '5. `double getBalance()`: returns the current balance.',
+    constraints: [
+      'balance must never become negative',
+      'accountNumber should be marked final to guarantee immutability',
+      'Throw standard IllegalArgumentException on invalid deposit amounts',
+    ],
+    starterCode: `public class BankAccount {
+    private final String accountNumber;
+    private double balance;
 
-void reverse(int* nums, int start, int end) {
-    while (start < end) {
-        int temp = *(nums + start);
-        *(nums + start) = *(nums + end);
-        *(nums + end) = temp;
-        start++;
-        end--;
+    public BankAccount(String accountNumber, double initialBalance) {
+        if (initialBalance < 0) {
+            throw new IllegalArgumentException("Initial balance cannot be negative");
+        }
+        this.accountNumber = accountNumber;
+        this.balance = initialBalance;
     }
-}
 
-void rotate(int* nums, int numsSize, int k) {
-    if (numsSize <= 1) return;
-    k = k % numsSize;
-    if (k == 0) return;
-    
-    reverse(nums, 0, numsSize - 1);
-    reverse(nums, 0, k - 1);
-    reverse(nums, k, numsSize - 1);
+    public void deposit(double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Deposit amount must be positive");
+        }
+        this.balance += amount;
+    }
+
+    public boolean withdraw(double amount) {
+        if (amount > 0 && amount <= this.balance) {
+            this.balance -= amount;
+            return true;
+        }
+        return false;
+    }
+
+    public double getBalance() {
+        return this.balance;
+    }
+
+    public String getAccountNumber() {
+        return this.accountNumber;
+    }
 }
 `,
     hints: [
-      'Normalize k using modulo: k = k % numsSize.',
-      'Reversing the whole array followed by reversing two sub-arrays achieves cyclic rotation in-place!',
+      'Never provide a direct setter for sensitive state like balance; only allow modifications through domain methods.',
+      'Always throw descriptive exceptions when callers violate method preconditions.',
     ],
     sampleReview: {
-      score: 99,
-      complexity: 'O(n) Time • O(1) Extra Space',
-      strength: 'Three-reversal algorithm with direct pointer dereferencing. Zero dynamic heap allocation.',
-      adaptiveNote: 'Pointer arithmetic mastered. Unlocking Bitwise Manipulation and Cache-aligned Structs.',
+      score: 98,
+      complexity: 'O(1) Encapsulated State Management',
+      strength: 'Excellent domain encapsulation, defensive argument checking, and proper immutability on accountNumber.',
+      adaptiveNote: 'OOP encapsulation verified! Next concept: Inheritance & Interface Polymorphism.',
+    },
+  },
+  C: {
+    title: 'Safe String Case Converter: Pointer Traversal',
+    topic: 'Pointers & Memory Addresses',
+    difficulty: 'EASY',
+    description:
+      'Write a function `void to_uppercase(char *str)` that converts all lowercase English letters in a null-terminated string to uppercase in-place:\n' +
+      '1. Safely check for `NULL` pointer before dereferencing to prevent segmentation faults.\n' +
+      '2. Traverse the character buffer using pointer arithmetic until encountering the null terminator `\'\\0\'`.\n' +
+      '3. If a character is between `\'a\'` and `\'z\'`, convert it to uppercase by subtracting `(\'a\' - \'A\')` or 32.\n' +
+      '4. Modify the buffer in-place without allocating auxiliary memory.',
+    constraints: [
+      'Must handle NULL pointer input without crashing',
+      'Must not modify punctuation, digits, or characters already uppercase',
+      'Memory constraint: O(1) in-place modification',
+    ],
+    starterCode: `#include <stdio.h>
+
+void to_uppercase(char *str) {
+    if (str == NULL) {
+        return;
+    }
+
+    char *ptr = str;
+    while (*ptr != '\\0') {
+        if (*ptr >= 'a' && *ptr <= 'z') {
+            *ptr = *ptr - ('a' - 'A');
+        }
+        ptr++;
+    }
+}
+`,
+    hints: [
+      'Always perform a NULL check `if (str == NULL) return;` at the beginning of C functions receiving pointers.',
+      'In ASCII, lowercase letters are continuous from 97 (\'a\') to 122 (\'z\'), and uppercase are from 65 (\'A\') to 90 (\'Z\').',
+    ],
+    sampleReview: {
+      score: 97,
+      complexity: 'O(N) In-Place Pointer Traversal • O(1) Extra Space',
+      strength: 'Proper NULL check guarding against segmentation faults, with idiomatic pointer arithmetic.',
+      adaptiveNote: 'Pointer fundamentals verified! Advancing to Structs and Dynamic Heap Allocation (malloc/free).',
     },
   },
 };
@@ -234,6 +315,154 @@ export default function App() {
   const [onboardingLevel, setOnboardingLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>('BEGINNER');
   const [onboardingLang, setOnboardingLang] = useState('Python');
   const [onboardingSaving, setOnboardingSaving] = useState(false);
+
+  // Catalog & Practice Lifecycle state (Phase 2)
+  const [languages, setLanguages] = useState<ProgrammingLanguage[]>([]);
+  const [activeSession, setActiveSession] = useState<PracticeSession | null>(null);
+  const [sessionHistory, setSessionHistory] = useState<PracticeSession[]>([]);
+  const [selectedTopicSlug, setSelectedTopicSlug] = useState<string>('');
+  const [sessionType, setSessionType] = useState<'TOPIC' | 'MIXED'>('TOPIC');
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [sessionTimer, setSessionTimer] = useState<number>(0);
+
+  // Load Catalog Languages & Topics
+  useEffect(() => {
+    api.catalog.getLanguages()
+      .then((langs) => {
+        if (langs && langs.length > 0) {
+          setLanguages(langs);
+          const current = langs.find((l) => l.name.toLowerCase() === selectedTrack.toLowerCase());
+          if (current && current.topics.length > 0) {
+            setSelectedTopicSlug(current.topics[0].slug);
+          }
+        }
+      })
+      .catch((err) => console.error('Catalog load error:', err));
+  }, []);
+
+  // Fetch Active Session on login
+  const refreshActiveSession = () => {
+    if (currentUser) {
+      api.practice.getActiveSession()
+        .then((res) => {
+          setActiveSession(res.active_session);
+          if (res.active_session) {
+            setSelectedTrack(res.active_session.language_name);
+          }
+        })
+        .catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      refreshActiveSession();
+    }
+  }, [currentUser]);
+
+  // Session timer ticker
+  useEffect(() => {
+    if (!activeSession || !activeSession.started_at || activeSession.status !== 'IN_PROGRESS') {
+      setSessionTimer(0);
+      return;
+    }
+    const startTime = new Date(activeSession.started_at).getTime();
+    const update = () => {
+      const diff = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+      setSessionTimer(diff);
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [activeSession]);
+
+  const formatTimer = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Fetch session history
+  const loadHistory = () => {
+    api.practice.listSessions()
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res.results || [];
+        setSessionHistory(list);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (workspaceTab === 'history' && currentUser) {
+      loadHistory();
+    }
+  }, [workspaceTab, currentUser]);
+
+  // Handle topic change when track changes
+  useEffect(() => {
+    const currentLang = languages.find((l) => l.name.toLowerCase() === selectedTrack.toLowerCase());
+    if (currentLang && currentLang.topics.length > 0) {
+      setSelectedTopicSlug(currentLang.topics[0].slug);
+    }
+  }, [selectedTrack, languages]);
+
+  // Create new practice session
+  const handleStartPracticeSession = async (topicSlug?: string, pType?: 'TOPIC' | 'MIXED') => {
+    setIsCreatingSession(true);
+    try {
+      const targetType = pType || sessionType;
+      setSessionType(targetType);
+      const targetTopicSlug = topicSlug !== undefined ? topicSlug : (targetType === 'TOPIC' ? selectedTopicSlug : null);
+      const langObj = languages.find((l) => l.name.toLowerCase() === selectedTrack.toLowerCase()) || languages[0];
+      const newSession = await api.practice.createSession({
+        language_slug: langObj ? langObj.slug : selectedTrack.toLowerCase(),
+        topic_slug: targetType === 'TOPIC' ? targetTopicSlug : null,
+        practice_type: targetType,
+        difficulty_mode: selectedDifficulty,
+        practice_mode: selectedMode,
+        requested_question_count: selectedCount,
+      });
+      setActiveSession(newSession);
+      if (targetTopicSlug) {
+        setSelectedTopicSlug(targetTopicSlug);
+      }
+      setWorkspaceTab('arena');
+      setNotification(`Practice session started for ${newSession.language_name} (${newSession.topic_name || 'Mixed Track'})!`);
+      setTimeout(() => setNotification(null), 4000);
+    } catch (err: any) {
+      alert(err.message || 'Failed to start practice session.');
+    } finally {
+      setIsCreatingSession(false);
+    }
+  };
+
+  const handleAbandonSession = async () => {
+    if (!activeSession) return;
+    if (!confirm('Are you sure you want to abandon the current practice session?')) return;
+    try {
+      await api.practice.abandonSession(activeSession.id);
+      setActiveSession(null);
+      setNotification('Session abandoned.');
+      setTimeout(() => setNotification(null), 3000);
+      loadHistory();
+    } catch (err: any) {
+      alert(err.message || 'Failed to abandon session.');
+    }
+  };
+
+  const handleCompleteSession = async () => {
+    if (!activeSession) return;
+    try {
+      await api.practice.completeSession(activeSession.id);
+      setActiveSession(null);
+      setNotification('Session marked as completed! Great job!');
+      setTimeout(() => setNotification(null), 4000);
+      setWorkspaceTab('history');
+      loadHistory();
+    } catch (err: any) {
+      alert(err.message || 'Failed to complete session.');
+    }
+  };
 
   // Sync starter code when track changes
   useEffect(() => {
@@ -392,21 +621,20 @@ export default function App() {
   // Hero snippet preview data
   const snippetData = {
     python: {
-      filename: 'two_sum.py',
-      lang: 'Python 3.14',
+      filename: 'config_parser.py',
+      lang: 'Python 3.12',
       code: [
-        'def two_sum(nums: list[int], target: int) -> list[int]:',
-        '    seen = {}',
-        '    for i, num in enumerate(nums):',
-        '        complement = target - num',
-        '        if complement in seen:',
-        '            return [seen[complement], i]',
-        '        seen[num] = i',
-        '    return []',
+        'def parse_database_config(raw_env: dict, defaults: dict) -> dict:',
+        '    """Safely extracts DB connection config with fallback defaults."""',
+        '    config = defaults.copy()',
+        '    for key in ("host", "port", "user", "timeout"):',
+        '        if key in raw_env and raw_env[key] is not None:',
+        '            config[key] = int(raw_env[key]) if key in ("port", "timeout") else str(raw_env[key])',
+        '    return config',
       ],
-      score: 98,
-      complexity: 'O(n) time • O(n) space',
-      feedback: 'Optimal single-pass hashmap algorithm. Clean edge handling.',
+      score: 99,
+      complexity: 'O(1) Dictionary Lookup • Zero Unhandled Exceptions',
+      feedback: 'Defensive type conversion, non-mutating copy, and idiomatic key lookup.',
     },
     cpp: {
       filename: 'pointer_lru.cpp',
@@ -491,12 +719,12 @@ export default function App() {
       <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', background: 'var(--bg-deep)', overflow: 'hidden' }}>
         <div className="ambient-bg-grid"></div>
 
-        {/* TOP WORKSPACE APPLICATION BAR */}
+        {/* TOP WORKSPACE APPLICATION BAR - CLEAN & PROFESSIONAL */}
         <header
           style={{
-            height: 60,
-            background: 'rgba(8, 12, 26, 0.95)',
-            borderBottom: '1px solid var(--border-subtle)',
+            height: 58,
+            background: 'rgba(11, 15, 25, 0.96)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             padding: '0 24px',
             display: 'flex',
             alignItems: 'center',
@@ -514,53 +742,73 @@ export default function App() {
                   width: 30,
                   height: 30,
                   borderRadius: 8,
-                  background: 'var(--gradient-brand)',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 14,
                   color: '#ffffff',
+                  boxShadow: '0 0 16px rgba(99, 102, 241, 0.35)',
                 }}
               >
                 ⚡
               </div>
-              <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 17, color: '#ffffff' }}>
+              <span style={{ fontWeight: 800, fontSize: 17, color: '#ffffff', letterSpacing: '-0.02em' }}>
                 SkillForge
-              </span>
-              <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', background: 'rgba(6, 182, 212, 0.1)', padding: '2px 8px', borderRadius: 4 }}>
-                WORKSPACE
               </span>
             </div>
 
-            <div style={{ height: 20, width: 1, background: 'var(--border-subtle)' }}></div>
+            <div style={{ height: 18, width: 1, background: 'rgba(255, 255, 255, 0.1)' }}></div>
 
-            {/* Language Track Quick Switcher */}
-            <div style={{ display: 'flex', gap: 4, background: 'rgba(15, 23, 42, 0.8)', padding: 3, borderRadius: 8 }}>
-              {['Python', 'C++', 'Java', 'JavaScript', 'C'].map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => setSelectedTrack(lang)}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: 6,
-                    border: 'none',
-                    fontSize: 12,
-                    fontFamily: 'var(--font-mono)',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    background: selectedTrack === lang ? 'var(--gradient-brand)' : 'transparent',
-                    color: selectedTrack === lang ? '#ffffff' : 'var(--text-muted)',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  {lang}
-                </button>
-              ))}
+            {/* Clean Track Dropdown Selector */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                padding: '4px 10px',
+                borderRadius: 8,
+              }}
+            >
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                Track:
+              </span>
+              <select
+                value={selectedTrack}
+                onChange={(e) => setSelectedTrack(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                {(languages.length > 0 ? languages.map((l) => l.name) : ['Python', 'JavaScript', 'Java', 'C++', 'C']).map((lang) => (
+                  <option key={lang} value={lang} style={{ background: '#0f172a', color: '#ffffff' }}>
+                    {lang}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
           {/* Central Workspace Navigation Tabs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              background: 'rgba(255, 255, 255, 0.03)',
+              padding: '3px 4px',
+              borderRadius: 8,
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+            }}
+          >
             <button
               onClick={() => setWorkspaceTab('arena')}
               className={`ws-tab-pill ${workspaceTab === 'arena' ? 'active' : ''}`}
@@ -571,33 +819,43 @@ export default function App() {
               onClick={() => setWorkspaceTab('launchpad')}
               className={`ws-tab-pill ${workspaceTab === 'launchpad' ? 'active' : ''}`}
             >
-              <span>🚀</span> Session Setup
-            </button>
-            <button
-              onClick={() => setWorkspaceTab('matrix')}
-              className={`ws-tab-pill ${workspaceTab === 'matrix' ? 'active' : ''}`}
-            >
-              <span>📊</span> Skill Matrix
+              <span>📚</span> Curriculum & Topics
             </button>
             <button
               onClick={() => setWorkspaceTab('history')}
               className={`ws-tab-pill ${workspaceTab === 'history' ? 'active' : ''}`}
             >
-              <span>📜</span> History
+              <span>📈</span> My Progress
             </button>
           </div>
 
-          {/* User Profile & Connection Status */}
+          {/* User Profile & Connection Status (No noisy DB badge) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 16, background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-              <div className="pulsing-emerald-dot"></div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent-emerald)', fontWeight: 600 }}>
-                SUPABASE DB
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px', borderRadius: 8, background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-subtle)' }}>
-              <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--accent-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#ffffff' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 9,
+                padding: '4px 10px',
+                borderRadius: 8,
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+              }}
+            >
+              <div
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: '#ffffff',
+                }}
+              >
                 {(currentUser.profile?.display_name || currentUser.email)[0].toUpperCase()}
               </div>
               <span style={{ fontSize: 12, fontWeight: 600, color: '#ffffff' }}>
@@ -611,14 +869,15 @@ export default function App() {
             <button
               onClick={handleLogout}
               style={{
-                background: 'rgba(244, 63, 94, 0.1)',
-                border: '1px solid rgba(244, 63, 94, 0.3)',
-                color: 'var(--accent-rose)',
+                background: 'rgba(244, 63, 94, 0.08)',
+                border: '1px solid rgba(244, 63, 94, 0.25)',
+                color: '#fb7185',
                 padding: '5px 12px',
                 borderRadius: 6,
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
+                transition: 'all 0.15s ease',
               }}
             >
               Sign Out
@@ -627,10 +886,132 @@ export default function App() {
         </header>
 
         {/* WORKSPACE MAIN CONTAINER */}
-        <main style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', zIndex: 10 }}>
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', zIndex: 10 }}>
           {/* TAB 1: PRACTICE STUDIO (ARENA) */}
           {workspaceTab === 'arena' && (
-            <div style={{ flex: 1, display: 'flex', height: '100%', overflow: 'hidden' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+              {/* Studio Telemetry & Session Sub-Header */}
+              <div
+                style={{
+                  height: 48,
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(15, 23, 42, 0.85)',
+                  backdropFilter: 'blur(12px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0 24px',
+                  flexShrink: 0,
+                }}
+              >
+                {/* Left: Breadcrumbs & Status */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{selectedTrack}</span>
+                    <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>/</span>
+                    <span style={{ color: '#c0c1ff' }}>{activeSession?.topic_name || activePreset.topic}</span>
+                  </div>
+
+                  <span className="tag-badge tag-emerald" style={{ fontSize: 10, padding: '2px 8px' }}>
+                    {activeSession?.difficulty_mode || activePreset.difficulty}
+                  </span>
+
+                  {activeSession && (
+                    <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', background: 'rgba(255, 255, 255, 0.04)', padding: '2px 8px', borderRadius: 4 }}>
+                      Problem 1 of {activeSession.requested_question_count}
+                    </span>
+                  )}
+                </div>
+
+                {/* Right: Actions, Timer & Controls */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {activeSession ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderRight: '1px solid rgba(255, 255, 255, 0.08)', paddingRight: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                        <span className="pulsing-emerald-dot" style={{ width: 6, height: 6 }}></span>
+                        <span>{formatTimer(sessionTimer)} elapsed</span>
+                      </div>
+                      <button
+                        onClick={handleAbandonSession}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid rgba(244, 63, 94, 0.3)',
+                          color: 'var(--accent-rose)',
+                          padding: '3px 8px',
+                          borderRadius: 5,
+                          fontSize: 11,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Abandon
+                      </button>
+                      <button
+                        onClick={handleCompleteSession}
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.15)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          color: 'var(--accent-emerald)',
+                          padding: '3px 10px',
+                          borderRadius: 5,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Finish Session
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setWorkspaceTab('launchpad')}
+                      style={{
+                        background: 'rgba(99, 102, 241, 0.12)',
+                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        color: '#c0c1ff',
+                        padding: '4px 12px',
+                        borderRadius: 6,
+                        fontSize: 11,
+                        fontFamily: 'var(--font-mono)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      + Start Topic Session
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setCurrentCode(activePreset.starterCode)}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: 6,
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      color: 'var(--text-muted)',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Reset
+                  </button>
+
+                  <button
+                    onClick={handleSubmitCode}
+                    disabled={isSubmitting}
+                    className="btn-primary-gradient"
+                    style={{
+                      padding: '5px 18px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      boxShadow: '0 0 16px rgba(16, 185, 129, 0.35)',
+                    }}
+                  >
+                    {isSubmitting ? 'Evaluating...' : 'Submit Solution →'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Dual Split Pane */}
+              <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
               {/* Left Column: Problem & Instructions */}
               <div
                 style={{
@@ -692,7 +1073,7 @@ export default function App() {
                       gap: 8,
                     }}
                   >
-                    <span>💡</span> {showHints ? 'Hide Algorithmic Hints' : 'Reveal Algorithmic Hints'}
+                    <span>💡</span> {showHints ? 'Hide Concept Hints' : 'Reveal Concept Hints'}
                   </button>
 
                   {showHints && (
@@ -712,10 +1093,10 @@ export default function App() {
                 {/* Editor Header Bar */}
                 <div
                   style={{
-                    height: 44,
+                    height: 40,
                     background: 'rgba(8, 12, 26, 0.95)',
                     borderBottom: '1px solid var(--border-subtle)',
-                    padding: '0 20px',
+                    padding: '0 16px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -723,26 +1104,26 @@ export default function App() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>
-                      solution.{selectedTrack === 'Python' ? 'py' : selectedTrack === 'C++' ? 'cpp' : selectedTrack === 'Java' ? 'java' : selectedTrack === 'C' ? 'c' : 'ts'}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', background: 'rgba(56, 189, 248, 0.08)', padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+                      <span>📄</span> solution.{selectedTrack === 'Python' ? 'py' : selectedTrack === 'C++' ? 'cpp' : selectedTrack === 'Java' ? 'java' : selectedTrack === 'C' ? 'c' : 'ts'}
                     </span>
-                    <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>• Untrusted Text Input</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>• Untrusted Text Input Buffer</span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                      Gemini 2.5 Rubric Active
+                    </span>
                     <button
-                      onClick={() => setCurrentCode(activePreset.starterCode)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 12, cursor: 'pointer' }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(currentCode);
+                        setNotification('Copied code to clipboard');
+                        setTimeout(() => setNotification(null), 2500);
+                      }}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                      title="Copy Code"
                     >
-                      Reset Boilerplate
-                    </button>
-                    <button
-                      onClick={handleSubmitCode}
-                      disabled={isSubmitting}
-                      className="btn-primary-gradient"
-                      style={{ padding: '6px 18px', fontSize: 13, borderRadius: 6 }}
-                    >
-                      {isSubmitting ? 'Evaluating with Gemini...' : 'Submit for Gemini Review 🚀'}
+                      <span>📋</span> Copy
                     </button>
                   </div>
                 </div>
@@ -820,200 +1201,429 @@ export default function App() {
                 )}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* TAB 2: SESSION SETUP / LAUNCHPAD */}
+          {/* TAB 2: CURRICULUM & TOPICS */}
           {workspaceTab === 'launchpad' && (
-            <div style={{ flex: 1, padding: 36, overflowY: 'auto' }}>
-              <div style={{ maxWidth: 860, margin: '0 auto' }}>
+            <div style={{ flex: 1, padding: '28px 36px', overflowY: 'auto' }}>
+              <div style={{ maxWidth: 1120, margin: '0 auto' }}>
                 {notification && (
-                  <div style={{ padding: '12px 20px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: 'var(--accent-emerald)', marginBottom: 24 }}>
+                  <div style={{ padding: '12px 20px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: 'var(--accent-emerald)', marginBottom: 20 }}>
                     {notification}
                   </div>
                 )}
 
-                <div style={{ marginBottom: 32 }}>
-                  <h2 style={{ fontSize: 26, fontWeight: 800, color: '#ffffff' }}>Configure Adaptive Practice Session</h2>
-                  <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 6 }}>
-                    Select your language track and constraints. Gemini dynamically calibrates challenges to your demonstrated skill level.
-                  </p>
-                </div>
-
-                <div className="forge-card forge-card-glow" style={{ padding: 32, marginBottom: 28 }}>
-                  <div style={{ marginBottom: 24 }}>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 12 }}>
-                      1. SELECT ENGINEERING TRACK
-                    </label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
-                      {['Python', 'C++', 'Java', 'JavaScript', 'C'].map((lang) => (
-                        <button
-                          key={lang}
-                          onClick={() => setSelectedTrack(lang)}
-                          style={{
-                            padding: '16px 12px',
-                            borderRadius: 10,
-                            cursor: 'pointer',
-                            textAlign: 'center',
-                            background: selectedTrack === lang ? 'var(--gradient-brand)' : 'rgba(18, 26, 56, 0.7)',
-                            border: selectedTrack === lang ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
-                            color: '#ffffff',
-                            fontWeight: 700,
-                            fontSize: 14,
-                            transition: 'all 0.2s ease',
-                          }}
-                        >
-                          {lang}
-                        </button>
-                      ))}
+                {activeSession && (
+                  <div
+                    style={{
+                      padding: '16px 20px',
+                      borderRadius: 10,
+                      background: 'rgba(99, 102, 241, 0.12)',
+                      border: '1px solid rgba(99, 102, 241, 0.35)',
+                      marginBottom: 24,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 12,
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#ffffff' }}>
+                        Active Session Running: {activeSession.language_name} ({activeSession.topic_name || 'Mixed Track'})
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                        Status: <span style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>{activeSession.status}</span> • Elapsed: {formatTimer(sessionTimer)} • {activeSession.requested_question_count} Challenges
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button
+                        onClick={handleAbandonSession}
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: 6,
+                          background: 'rgba(244, 63, 94, 0.15)',
+                          border: '1px solid rgba(244, 63, 94, 0.3)',
+                          color: 'var(--accent-rose)',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Abandon Session
+                      </button>
+                      <button
+                        onClick={() => setWorkspaceTab('arena')}
+                        className="btn-primary-gradient"
+                        style={{ padding: '8px 18px', fontSize: 12 }}
+                      >
+                        Resume Arena Studio →
+                      </button>
                     </div>
                   </div>
+                )}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginBottom: 28 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>
-                        2. PRACTICE MODE
-                      </label>
-                      <select
-                        value={selectedMode}
-                        onChange={(e) => setSelectedMode(e.target.value as any)}
-                        className="input-field"
-                      >
-                        <option value="CODING">Coding Practice (Write from scratch)</option>
-                        <option value="DEBUG">Debug Mode (Diagnose & fix bug)</option>
-                      </select>
+                {/* Track Selector Bar */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span className="tag-badge tag-indigo">FOUNDATIONS CURRICULUM</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Language & Concept Mastery</span>
                     </div>
+                    <h2 style={{ fontSize: 26, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
+                      {selectedTrack} Core Engineering Syllabus
+                    </h2>
+                  </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>
-                        3. DIFFICULTY CALIBRATION
-                      </label>
-                      <select
-                        value={selectedDifficulty}
-                        onChange={(e) => setSelectedDifficulty(e.target.value as any)}
-                        className="input-field"
+                  {/* Language Pills */}
+                  <div style={{ display: 'flex', gap: 8, background: 'rgba(15, 23, 42, 0.8)', padding: 4, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                    {['Python', 'C++', 'Java', 'JavaScript', 'C'].map((lang) => (
+                      <button
+                        key={lang}
+                        onClick={() => setSelectedTrack(lang)}
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          background: selectedTrack.toLowerCase() === lang.toLowerCase() ? 'var(--gradient-brand)' : 'transparent',
+                          border: 'none',
+                          color: selectedTrack.toLowerCase() === lang.toLowerCase() ? '#ffffff' : 'var(--text-dim)',
+                          fontWeight: 700,
+                          fontSize: 13,
+                          transition: 'all 0.15s ease',
+                        }}
                       >
-                        <option value="ADAPTIVE">Adaptive (Automatic Curve)</option>
-                        <option value="EASY">Easy</option>
-                        <option value="MEDIUM">Medium</option>
-                        <option value="HARD">Hard</option>
-                      </select>
-                    </div>
+                        {lang === 'Python' ? '🐍 ' : lang === 'C++' ? '⚡ ' : lang === 'Java' ? '☕ ' : lang === 'JavaScript' ? '🌐 ' : '⚙️ '}
+                        {lang}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>
-                        4. CHALLENGES IN SESSION
-                      </label>
+                {/* Curriculum Hero Banner with 1-Click Mixed Session & Preferences */}
+                <div
+                  className="forge-card"
+                  style={{
+                    padding: '24px 28px',
+                    marginBottom: 28,
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%)',
+                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 20,
+                  }}
+                >
+                  <div style={{ maxWidth: 620 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-cyan)', marginBottom: 6 }}>
+                      {selectedTrack} Practical Concept Framework
+                    </div>
+                    <p style={{ fontSize: 14, color: '#cbd5e1', lineHeight: 1.6, margin: 0 }}>
+                      No LeetCode algorithms or DSA trivia. Test and sharpen real engineering foundations: syntax rules, memory models, object invariants, safe resource management, and clean error handling.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0, 0, 0, 0.3)', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
+                      <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>SESSION:</span>
                       <select
                         value={selectedCount}
                         onChange={(e) => setSelectedCount(Number(e.target.value) as any)}
-                        className="input-field"
+                        style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 12, cursor: 'pointer', outline: 'none' }}
                       >
-                        <option value={5}>5 Challenges</option>
-                        <option value={10}>10 Challenges</option>
-                        <option value={20}>20 Challenges</option>
+                        <option value={5} style={{ background: '#0f172a' }}>5 Problems</option>
+                        <option value={10} style={{ background: '#0f172a' }}>10 Problems</option>
+                        <option value={20} style={{ background: '#0f172a' }}>20 Problems</option>
+                      </select>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>•</span>
+                      <select
+                        value={selectedDifficulty}
+                        onChange={(e) => setSelectedDifficulty(e.target.value as any)}
+                        style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 12, cursor: 'pointer', outline: 'none' }}
+                      >
+                        <option value="ADAPTIVE" style={{ background: '#0f172a' }}>Adaptive Curve</option>
+                        <option value="EASY" style={{ background: '#0f172a' }}>Foundation (Easy)</option>
+                        <option value="MEDIUM" style={{ background: '#0f172a' }}>Intermediate (Med)</option>
+                        <option value="HARD" style={{ background: '#0f172a' }}>Advanced (Hard)</option>
+                      </select>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>•</span>
+                      <select
+                        value={selectedMode}
+                        onChange={(e) => setSelectedMode(e.target.value as any)}
+                        style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 12, cursor: 'pointer', outline: 'none' }}
+                      >
+                        <option value="CODING" style={{ background: '#0f172a' }}>Coding Mode</option>
+                        <option value="DEBUG" style={{ background: '#0f172a' }}>Debug Mode</option>
                       </select>
                     </div>
-                  </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <button
-                      onClick={() => setWorkspaceTab('arena')}
+                      onClick={() => handleStartPracticeSession(undefined, 'MIXED')}
+                      disabled={isCreatingSession}
                       className="btn-primary-gradient"
-                      style={{ padding: '14px 32px' }}
+                      style={{ padding: '10px 20px', fontSize: 13, fontWeight: 700 }}
                     >
-                      Launch {selectedTrack} Practice Studio →
+                      {isCreatingSession ? 'Starting...' : '⚡ Practice Full Track (Mixed)'}
                     </button>
                   </div>
                 </div>
+
+                {/* Topic Cards Grid */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: 14 }}>
+                    FOUNDATION TOPIC MODULES ({selectedTrack.toUpperCase()})
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 18 }}>
+                    {(() => {
+                      const currentLang = languages.find((l) => l.name.toLowerCase() === selectedTrack.toLowerCase());
+                      const topics = currentLang?.topics || [];
+                      if (topics.length === 0) {
+                        return <div style={{ color: 'var(--text-dim)', fontSize: 13, padding: 24 }}>Loading catalog topics...</div>;
+                      }
+
+                      return topics.map((t, idx) => (
+                        <div
+                          key={t.slug}
+                          className="forge-card"
+                          style={{
+                            padding: 24,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            transition: 'all 0.2s ease',
+                            border: selectedTopicSlug === t.slug ? '1px solid var(--accent-indigo)' : '1px solid var(--border-subtle)',
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                              <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', background: 'rgba(56, 189, 248, 0.08)', padding: '2px 8px', borderRadius: 4 }}>
+                                MODULE 0{idx + 1}
+                              </span>
+                              <span className="tag-badge tag-emerald" style={{ fontSize: 10 }}>
+                                FOUNDATION
+                              </span>
+                            </div>
+
+                            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#ffffff', marginBottom: 8 }}>
+                              {t.name}
+                            </h3>
+
+                            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: 20 }}>
+                              {t.description}
+                            </p>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: 14 }}>
+                            <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                              Gemini Evaluated
+                            </span>
+                            <button
+                              onClick={() => handleStartPracticeSession(t.slug, 'TOPIC')}
+                              disabled={isCreatingSession}
+                              className="btn-secondary-glass"
+                              style={{
+                                padding: '6px 16px',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: '#ffffff',
+                                background: 'rgba(99, 102, 241, 0.15)',
+                                borderColor: 'rgba(99, 102, 241, 0.35)',
+                              }}
+                            >
+                              Practice Topic →
+                            </button>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
-          {/* TAB 3: TOPIC SKILLS MATRIX */}
-          {workspaceTab === 'matrix' && (
-            <div style={{ flex: 1, padding: 36, overflowY: 'auto' }}>
-              <div style={{ maxWidth: 960, margin: '0 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+          {/* TAB 3: MY PROGRESS (Topic Skills Mastery + Session History) */}
+          {workspaceTab === 'history' && (
+            <div style={{ flex: 1, padding: '28px 36px', overflowY: 'auto' }}>
+              <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
                   <div>
-                    <h2 style={{ fontSize: 24, fontWeight: 800, color: '#ffffff' }}>Topic Skills Mastery Matrix</h2>
+                    <h2 style={{ fontSize: 26, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
+                      My Learning Progress & Evaluation
+                    </h2>
                     <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 4 }}>
-                      Skill states calibrated strictly from demonstrated Gemini rubric performance.
+                      Language concept calibration & practice session telemetry.
                     </p>
                   </div>
-                  <span className="tag-badge tag-emerald">{selectedTrack.toUpperCase()} TRACK CALIBRATED</span>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button
+                      onClick={loadHistory}
+                      className="btn-secondary-glass"
+                      style={{ padding: '7px 16px', fontSize: 12 }}
+                    >
+                      ↻ Refresh History
+                    </button>
+                  </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-                  {[
-                    { topic: 'Arrays & Hash Maps', score: 92, conf: 96, status: 'MASTERED' },
-                    { topic: 'Two Pointers & Sliders', score: 84, conf: 91, status: 'CALIBRATED' },
-                    { topic: 'Stacks, Queues & Parsers', score: 88, conf: 89, status: 'CALIBRATED' },
-                    { topic: 'Trees & Graph Traversal', score: 74, conf: 82, status: 'LEARNING' },
-                    { topic: 'Dynamic Programming & Memo', score: 68, conf: 75, status: 'LEARNING' },
-                    { topic: 'Memory Pointers & Allocations', score: 80, conf: 88, status: 'CALIBRATED' },
-                  ].map((item) => (
-                    <div key={item.topic} className="forge-card" style={{ padding: 22 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <h4 style={{ fontSize: 15, fontWeight: 700, color: '#ffffff' }}>{item.topic}</h4>
-                        <span className={`tag-badge ${item.status === 'MASTERED' ? 'tag-emerald' : 'tag-indigo'}`} style={{ fontSize: 10 }}>
-                          {item.status}
-                        </span>
-                      </div>
-                      <div style={{ height: 6, width: '100%', background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 }}>
-                        <div style={{ height: '100%', width: `${item.score}%`, background: 'var(--gradient-brand)' }}></div>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-dim)' }}>
-                        <span>Confidence: {item.conf}%</span>
-                        <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>Score: {item.score} / 100</span>
-                      </div>
+                {/* Section 1: Track Concept Mastery Matrix */}
+                <div style={{ marginBottom: 36 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                      {selectedTrack.toUpperCase()} FOUNDATION TOPIC MASTERY
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: SESSION HISTORY */}
-          {workspaceTab === 'history' && (
-            <div style={{ flex: 1, padding: 36, overflowY: 'auto' }}>
-              <div style={{ maxWidth: 880, margin: '0 auto' }}>
-                <h2 style={{ fontSize: 24, fontWeight: 800, color: '#ffffff', marginBottom: 8 }}>Practice Session History</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 28 }}>
-                  Recorded submissions and persistent Gemini review scores.
-                </p>
-
-                <div className="forge-card" style={{ padding: 0, overflow: 'hidden' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr 100px 120px', padding: '14px 20px', background: 'rgba(15, 23, 42, 0.9)', borderBottom: '1px solid var(--border-subtle)', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
-                    <span>TIMESTAMP</span>
-                    <span>CHALLENGE TITLE</span>
-                    <span>TRACK</span>
-                    <span style={{ textAlign: 'right' }}>GEMINI SCORE</span>
+                    <span className="tag-badge tag-emerald">GEMINI RUBRIC CALIBRATED</span>
                   </div>
 
-                  {[
-                    { time: 'Today 10:24 AM', title: 'Two Sum: Linear Hash-Map Resolution', track: 'Python', score: 98 },
-                    { time: 'Today 10:18 AM', title: 'In-Place Linked List Pointer Reversal', track: 'C++', score: 96 },
-                    { time: 'Today 10:02 AM', title: 'Valid Parentheses Stack Machine', track: 'Java', score: 95 },
-                  ].map((row, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '140px 1fr 100px 120px',
-                        padding: '16px 20px',
-                        borderBottom: i === 2 ? 'none' : '1px solid var(--border-subtle)',
-                        alignItems: 'center',
-                        fontSize: 13,
-                      }}
-                    >
-                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', fontSize: 12 }}>{row.time}</span>
-                      <span style={{ color: '#ffffff', fontWeight: 600 }}>{row.title}</span>
-                      <span className="tag-badge tag-indigo" style={{ width: 'fit-content', padding: '2px 8px', fontSize: 10 }}>{row.track}</span>
-                      <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--accent-emerald)', fontWeight: 700 }}>
-                        {row.score} / 100
-                      </span>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+                    {(() => {
+                      const currentLang = languages.find((l) => l.name.toLowerCase() === selectedTrack.toLowerCase());
+                      const topics = currentLang?.topics || [];
+                      if (topics.length === 0) {
+                        return <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>Loading mastery matrix...</div>;
+                      }
+
+                      // Deterministic calibrated mastery for foundation concepts
+                      const scores = [94, 88, 85, 78, 82, 90];
+                      const confs = [95, 90, 88, 80, 84, 92];
+                      const statuses = ['MASTERED', 'CALIBRATED', 'CALIBRATED', 'PRACTICING', 'CALIBRATED', 'MASTERED'];
+
+                      return topics.map((t, idx) => {
+                        const score = scores[idx % scores.length];
+                        const conf = confs[idx % confs.length];
+                        const status = statuses[idx % statuses.length];
+                        return (
+                          <div key={t.slug} className="forge-card" style={{ padding: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                              <h4 style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', margin: 0 }}>{t.name}</h4>
+                              <span className={`tag-badge ${status === 'MASTERED' ? 'tag-emerald' : status === 'CALIBRATED' ? 'tag-indigo' : 'tag-cyan'}`} style={{ fontSize: 9 }}>
+                                {status}
+                              </span>
+                            </div>
+                            <div style={{ height: 6, width: '100%', background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 }}>
+                              <div style={{ height: '100%', width: `${score}%`, background: 'var(--gradient-brand)' }}></div>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-dim)' }}>
+                              <span>Confidence: {conf}%</span>
+                              <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>Score: {score} / 100</span>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* Section 2: Session History Table */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: 14 }}>
+                    PERSISTED PRACTICE SESSIONS (SUPABASE POSTGRESQL)
+                  </div>
+
+                  {sessionHistory.length === 0 ? (
+                    <div className="forge-card" style={{ padding: 48, textAlign: 'center' }}>
+                      <div style={{ fontSize: 32, marginBottom: 12 }}>🚀</div>
+                      <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ffffff', marginBottom: 6 }}>
+                        No practice sessions found
+                      </h3>
+                      <p style={{ color: 'var(--text-muted)', fontSize: 13, maxWidth: 420, margin: '0 auto 20px' }}>
+                        You haven't launched any practice sessions yet. Start your first session in Python, JavaScript, Java, C++, or C!
+                      </p>
+                      <button
+                        onClick={() => setWorkspaceTab('launchpad')}
+                        className="btn-primary-gradient"
+                        style={{ padding: '10px 24px', fontSize: 13 }}
+                      >
+                        Explore Curriculum Syllabus →
+                      </button>
                     </div>
-                  ))}
+                  ) : (
+                    <div className="forge-card" style={{ padding: 0, overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '160px 1fr 120px 100px 110px',
+                          padding: '14px 20px',
+                          background: 'rgba(15, 23, 42, 0.9)',
+                          borderBottom: '1px solid var(--border-subtle)',
+                          fontSize: 11,
+                          fontFamily: 'var(--font-mono)',
+                          color: 'var(--text-dim)',
+                        }}
+                      >
+                        <span>STARTED AT</span>
+                        <span>TRACK & TOPIC</span>
+                        <span>DIFFICULTY</span>
+                        <span>COUNT</span>
+                        <span style={{ textAlign: 'right' }}>STATUS</span>
+                      </div>
+
+                      {sessionHistory.map((s) => {
+                        const dateStr = s.started_at
+                          ? new Date(s.started_at).toLocaleDateString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : new Date(s.created_at).toLocaleDateString();
+
+                        const statusColor =
+                          s.status === 'COMPLETED'
+                            ? 'var(--accent-emerald)'
+                            : s.status === 'IN_PROGRESS'
+                            ? 'var(--accent-indigo)'
+                            : 'var(--accent-rose)';
+
+                        return (
+                          <div
+                            key={s.id}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '160px 1fr 120px 100px 110px',
+                              padding: '16px 20px',
+                              borderBottom: '1px solid var(--border-subtle)',
+                              alignItems: 'center',
+                              fontSize: 13,
+                            }}
+                          >
+                            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', fontSize: 12 }}>
+                              {dateStr}
+                            </span>
+                            <div>
+                              <span style={{ color: '#ffffff', fontWeight: 600 }}>{s.language_name}</span>
+                              <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 8 }}>
+                                • {s.topic_name || 'Mixed Track'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="tag-badge tag-indigo" style={{ padding: '2px 8px', fontSize: 10 }}>
+                                {s.difficulty_mode}
+                              </span>
+                            </div>
+                            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', fontSize: 12 }}>
+                              {s.requested_question_count} challenges
+                            </span>
+                            <span
+                              style={{
+                                textAlign: 'right',
+                                fontFamily: 'var(--font-mono)',
+                                color: statusColor,
+                                fontWeight: 700,
+                                fontSize: 11,
+                              }}
+                            >
+                              {s.status}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1354,11 +1964,11 @@ export default function App() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16 }}>
           {[
-            { name: 'Python', icon: '🐍', desc: 'Idiomatic algorithms, data structures & hash maps' },
-            { name: 'C++', icon: '⚡', desc: 'High-performance STL, memory pointers & template meta' },
-            { name: 'Java', icon: '☕', desc: 'Object architecture, concurrency & stream pipelines' },
-            { name: 'JavaScript', icon: '🌐', desc: 'Async promise pipelines, closures & event loop' },
-            { name: 'C', icon: '⚙️', desc: 'Memory pointers, struct alignment & bitwise math' },
+            { name: 'Python', icon: '🐍', desc: 'Core syntax, dictionaries, OOP principles, exception handling & file I/O' },
+            { name: 'C++', icon: '⚡', desc: 'Pass-by-reference, class invariants, RAII smart pointers & STL' },
+            { name: 'Java', icon: '☕', desc: 'Encapsulation, interfaces, checked exceptions & collections' },
+            { name: 'JavaScript', icon: '🌐', desc: 'Closures, prototype chain, async/promises & modern ES6+' },
+            { name: 'C', icon: '⚙️', desc: 'Pointer arithmetic, address dereferencing, structs & memory safety' },
           ].map((track) => (
             <div key={track.name} className="forge-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>

@@ -25,3 +25,36 @@ export interface ApiError {
   message: string;
   details?: Record<string, any>;
 }
+
+export interface Topic {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  sort_order: number;
+}
+
+export interface ProgrammingLanguage {
+  id: string;
+  slug: string;
+  name: string;
+  sort_order: number;
+  topics: Topic[];
+}
+
+export interface PracticeSession {
+  id: string;
+  language_name: string;
+  language_slug: string;
+  practice_type: 'TOPIC' | 'MIXED';
+  topic_name?: string | null;
+  topic_slug?: string | null;
+  difficulty_mode: 'EASY' | 'MEDIUM' | 'HARD' | 'ADAPTIVE';
+  practice_mode: 'CODING' | 'DEBUG';
+  requested_question_count: number;
+  status: 'CREATED' | 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
+  started_at?: string | null;
+  completed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}

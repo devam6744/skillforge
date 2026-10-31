@@ -33,5 +33,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/health/', health_check, name='api-health'),
     path('api/v1/auth/', include('apps.accounts.urls')),
+    path('api/v1/catalog/', include('apps.catalog.urls')),
+    path('api/v1/practice/', include('apps.practice.urls')),
     path('api/v1/', include('apps.users.urls')),
 ]
