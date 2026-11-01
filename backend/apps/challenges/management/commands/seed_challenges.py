@@ -69,3 +69,4 @@ class Command(BaseCommand):
                 f"Total valid challenges in pool: {Challenge.objects.count()}."
             )
         )
+

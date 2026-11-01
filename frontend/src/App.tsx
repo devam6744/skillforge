@@ -263,6 +263,10 @@ export default function App() {
       }
     } catch (err: any) {
       console.error('Failed to load challenge:', err);
+      if (err.details?.error === 'INTERNET_REQUIRED' || err.message?.includes('internet') || err.message?.includes('Internet')) {
+        setNotification('⚠️ Internet connection required: Live AI generation requires an active internet connection.');
+        setTimeout(() => setNotification(null), 6000);
+      }
     } finally {
       setIsLoadingChallenge(false);
     }
@@ -288,7 +292,43 @@ export default function App() {
         setTimeout(() => setNotification(null), 3500);
       }
     } catch (err: any) {
-      alert(err.message || 'Could not load next challenge.');
+      if (err.details?.error === 'INTERNET_REQUIRED' || err.message?.includes('internet') || err.message?.includes('Internet')) {
+        setNotification('⚠️ Internet connection required: Live AI generation requires an active internet connection.');
+        setTimeout(() => setNotification(null), 6000);
+      } else {
+        alert(err.message || 'Could not load next challenge.');
+      }
+    } finally {
+      setIsLoadingChallenge(false);
+    }
+  };
+
+  const handleSkipChallenge = async () => {
+    if (!activeSession) return;
+    setIsLoadingChallenge(true);
+    try {
+      const skipData = await api.practice.skipChallenge(activeSession.id);
+      if (skipData.session_finished) {
+        setNotification('🎉 Session finished! All requested challenges completed.');
+        setTimeout(() => setNotification(null), 5000);
+        await handleCompleteSession();
+      } else {
+        setCurrentSessionChallenge(skipData);
+        if (skipData.challenge?.starter_code) {
+          setCurrentCode(skipData.challenge.starter_code);
+        }
+        setReviewResult(null);
+        setShowHints(false);
+        setNotification(`Skipped to Problem ${skipData.question_order} of ${skipData.total_questions}`);
+        setTimeout(() => setNotification(null), 3500);
+      }
+    } catch (err: any) {
+      if (err.details?.error === 'INTERNET_REQUIRED' || err.message?.includes('internet') || err.message?.includes('Internet')) {
+        setNotification('⚠️ Internet connection required: Live AI generation requires an active internet connection.');
+        setTimeout(() => setNotification(null), 6000);
+      } else {
+        alert(err.message || 'Could not skip challenge.');
+      }
     } finally {
       setIsLoadingChallenge(false);
     }
@@ -621,7 +661,12 @@ export default function App() {
       });
     } catch (err: any) {
       console.error('Submission error:', err);
-      alert(err.message || 'Evaluation request failed. Please check backend connection.');
+      if (err.details?.error === 'INTERNET_REQUIRED' || err.message?.includes('internet') || err.message?.includes('Internet')) {
+        setNotification('⚠️ Internet connection required: Live AI evaluation requires an active internet connection.');
+        setTimeout(() => setNotification(null), 6000);
+      } else {
+        alert(err.message || 'Evaluation request failed. Please check backend connection.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -991,25 +1036,48 @@ export default function App() {
                   )}
 
                   {activeSession && (
-                    <button
-                      onClick={handleNextChallenge}
-                      disabled={isLoadingChallenge}
-                      className="btn-secondary-glass"
-                      style={{
-                        padding: '5px 12px',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#c0c1ff',
-                        borderColor: 'rgba(99, 102, 241, 0.4)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                      }}
-                      title="Advance to next challenge in session"
-                    >
-                      <span>⏭</span>
-                      {isLoadingChallenge ? 'Loading...' : currentSessionChallenge?.is_last_question ? 'Finish Session' : 'Next Question'}
-                    </button>
+                    <>
+                      <button
+                        onClick={handleSkipChallenge}
+                        disabled={isLoadingChallenge}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: 6,
+                          border: '1px solid rgba(245, 158, 11, 0.35)',
+                          background: 'rgba(245, 158, 11, 0.08)',
+                          color: '#fbbf24',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                        title="Skip this question and move to next in the set"
+                      >
+                        <span>⏩</span> Skip
+                      </button>
+
+                      <button
+                        onClick={handleNextChallenge}
+                        disabled={isLoadingChallenge}
+                        className="btn-secondary-glass"
+                        style={{
+                          padding: '5px 12px',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: '#c0c1ff',
+                          borderColor: 'rgba(99, 102, 241, 0.4)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                        title="Advance to next challenge in session"
+                      >
+                        <span>⏭</span>
+                        {isLoadingChallenge ? 'Loading...' : currentSessionChallenge?.is_last_question ? 'Finish Session' : 'Next Question'}
+                      </button>
+                    </>
                   )}
 
                   <button

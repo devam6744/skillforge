@@ -1,21 +1,30 @@
 import json
 import logging
 from typing import Dict, Any, List
+import requests
 from django.conf import settings
 from django.utils import timezone
 from apps.submissions.models import Submission
 from apps.evaluation.models import Evaluation
 from apps.practice.models import SessionChallenge
 from apps.skills.models import SkillState
+from apps.challenges.services.gemini import AIConnectionError
 
 logger = logging.getLogger(__name__)
 
 
 class CodeEvaluationService:
     """
-    Evaluates student code submissions against problem requirements,
-    detects edge case handling and syntax errors, and persists the evaluation.
+    Evaluates student code submissions using live Gemini AI against scenario requirements.
+    Detects syntax errors, edge cases, logic flaws, time/space complexity, and rubric scores.
+    Requires active internet connection; raises AIConnectionError when offline.
     """
+
+    SUPPORTED_MODELS = [
+        'gemini-3-flash-preview',
+        'gemini-3.5-flash-lite',
+        'gemini-3.8-flash',
+    ]
 
     @classmethod
     def evaluate(cls, submission: Submission) -> Evaluation:
@@ -26,7 +35,7 @@ class CodeEvaluationService:
         challenge = submission.challenge
         language_slug = submission.language.slug
 
-        # 1. Quick empty / boilerplate check
+        # 1. Quick empty / boilerplate check (no AI call needed)
         if not source_code or source_code == challenge.starter_code.strip():
             return cls._create_evaluation(
                 submission=submission,
@@ -39,7 +48,7 @@ class CodeEvaluationService:
                 concepts_demonstrated=[]
             )
 
-        # 2. Local syntax compilation check for Python
+        # 2. Local syntax compilation check for Python (fast feedback before AI call)
         if language_slug == 'python':
             try:
                 compile(source_code, '<student_code>', 'exec')
@@ -55,40 +64,28 @@ class CodeEvaluationService:
                     concepts_demonstrated=[]
                 )
 
-        # 3. Attempt Gemini AI Evaluation
+        # 3. Live Gemini AI Evaluation
         ai_result = cls._evaluate_with_gemini(submission)
-        if ai_result:
-            return cls._create_evaluation(
-                submission=submission,
-                score=ai_result.get('score', 75),
-                status=Evaluation.Status.SUCCEEDED if ai_result.get('score', 0) >= 70 else Evaluation.Status.FAILED,
-                summary=ai_result.get('summary', 'Code evaluated.'),
-                feedback=ai_result.get('feedback', 'Good attempt.'),
-                syntax_issues=ai_result.get('syntax_issues', []),
-                logic_issues=ai_result.get('logic_issues', []),
-                complexity=ai_result.get('complexity', 'O(1) time'),
-                concepts_demonstrated=ai_result.get('concepts_demonstrated', challenge.target_concepts)
-            )
+        score = int(ai_result.get('score', 75))
+        passed = score >= 70
 
-        # 4. Deterministic scenario evaluation fallback
-        fallback_res = cls._evaluate_scenario_rules(source_code, challenge, language_slug)
         return cls._create_evaluation(
             submission=submission,
-            score=fallback_res['score'],
-            status=Evaluation.Status.SUCCEEDED if fallback_res['score'] >= 70 else Evaluation.Status.FAILED,
-            summary=fallback_res['summary'],
-            feedback=fallback_res['feedback'],
-            syntax_issues=fallback_res.get('syntax_issues', []),
-            logic_issues=fallback_res.get('logic_issues', []),
-            complexity=fallback_res.get('complexity', 'O(1) time • O(1) space'),
-            concepts_demonstrated=fallback_res.get('concepts_demonstrated', challenge.target_concepts)
+            score=score,
+            status=Evaluation.Status.SUCCEEDED if passed else Evaluation.Status.FAILED,
+            summary=ai_result.get('summary', 'Code evaluated by Gemini AI.'),
+            feedback=ai_result.get('feedback', 'Solution evaluated against scenario requirements.'),
+            syntax_issues=ai_result.get('syntax_issues', []),
+            logic_issues=ai_result.get('logic_issues', []),
+            complexity=ai_result.get('complexity', 'O(1) execution'),
+            concepts_demonstrated=ai_result.get('concepts_demonstrated', challenge.target_concepts)
         )
 
     @classmethod
-    def _evaluate_with_gemini(cls, submission: Submission) -> Dict[str, Any] | None:
+    def _evaluate_with_gemini(cls, submission: Submission) -> Dict[str, Any]:
         api_key = getattr(settings, 'GEMINI_API_KEY', None)
         if not api_key:
-            return None
+            raise AIConnectionError("GEMINI_API_KEY is not configured on the server.")
 
         prompt = f"""You are a computer science professor evaluating a student's solution to a university programming exercise.
 Problem Title: {submission.challenge.title}
@@ -115,126 +112,47 @@ Return ONLY a valid JSON object matching this schema:
   "concepts_demonstrated": ["list of concepts correctly demonstrated"]
 }}
 """
-        try:
-            from google import genai
-            from google.genai import types
+        preferred_model = getattr(settings, 'GEMINI_MODEL', 'gemini-3-flash-preview')
+        models_to_try = [preferred_model] + [m for m in cls.SUPPORTED_MODELS if m != preferred_model]
 
-            client = genai.Client(
-                api_key=api_key,
-                http_options=types.HttpOptions(client_args={'verify': False})
-            )
-            model_name = getattr(settings, 'GEMINI_MODEL', 'gemini-2.5-flash')
-
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.2,
+        last_error = "Unknown error"
+        for model in models_to_try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            try:
+                response = requests.post(
+                    url,
+                    json={
+                        "contents": [{"parts": [{"text": prompt}]}],
+                        "generationConfig": {
+                            "responseMimeType": "application/json",
+                            "temperature": 0.2,
+                        }
+                    },
+                    verify=False,
+                    timeout=30
                 )
-            )
 
-            text = response.text.strip()
-            if text.startswith("```json"):
-                text = text[7:]
-            if text.startswith("```"):
-                text = text[3:]
-            if text.endswith("```"):
-                text = text[:-3]
-            return json.loads(text.strip())
-        except Exception as exc:
-            logger.warning(f"Gemini code evaluation error: {exc}. Using deterministic scenario evaluation.")
-            return None
+                if response.status_code == 200:
+                    candidates = response.json().get('candidates', [])
+                    if candidates:
+                        text = candidates[0]['content']['parts'][0]['text'].strip()
+                        if text.startswith("```json"):
+                            text = text[7:]
+                        if text.startswith("```"):
+                            text = text[3:]
+                        if text.endswith("```"):
+                            text = text[:-3]
+                        return json.loads(text.strip())
 
-    @classmethod
-    def _evaluate_scenario_rules(cls, code: str, challenge, language_slug: str) -> Dict[str, Any]:
-        """
-        High-precision deterministic rule-based evaluator for scenario challenges.
-        """
-        lower_code = code.lower()
-        title_lower = challenge.title.lower()
+                last_error = f"{model} returned HTTP {response.status_code}: {response.text[:120]}"
+            except requests.exceptions.RequestException as req_err:
+                last_error = f"Network connection error for {model}: {req_err}"
+            except json.JSONDecodeError as json_err:
+                last_error = f"JSON decode error from {model}: {json_err}"
 
-        # Case 1: Voter Eligibility
-        if "voter" in title_lower:
-            has_negative_check = any(tok in code for tok in ['< 0', '<= -1', 'negative', 'invalid'])
-            has_18_check = any(tok in code for tok in ['>= 18', '> 17', '>=18'])
-            has_eligible_return = any(tok in lower_code for tok in ['eligible to vote', 'return 1'])
-            has_not_eligible_return = any(tok in lower_code for tok in ['not eligible', 'return 0'])
-
-            score = 0
-            logic_issues = []
-            if has_negative_check:
-                score += 35
-            else:
-                logic_issues.append("Did not check or handle negative age values (< 0).")
-
-            if has_18_check and has_eligible_return:
-                score += 35
-            else:
-                logic_issues.append("Did not check age >= 18 threshold for eligibility.")
-
-            if has_not_eligible_return:
-                score += 30
-            else:
-                logic_issues.append("Missing return branch for underage citizens (< 18).")
-
-            passed = score >= 70
-            return {
-                "score": score,
-                "summary": "All voter eligibility branches verified." if passed else "Incomplete conditional logic.",
-                "feedback": (
-                    "Excellent job! You verified negative age handling, checked the >= 18 threshold, and returned the proper status strings."
-                    if passed else
-                    f"Your logic is partially working. Issues to fix: {'; '.join(logic_issues)}"
-                ),
-                "logic_issues": logic_issues,
-                "complexity": "O(1) time • O(1) space",
-                "concepts_demonstrated": ["Branching", "Comparison Operators", "Boundary Conditions"]
-            }
-
-        # Case 2: Electricity Bill
-        if "electricity" in title_lower or "bill" in title_lower:
-            has_zero_check = '<=' in code or '<' in code
-            has_100_check = '100' in code
-            has_fixed_charge = '25' in code
-            score = 30 + (25 if has_zero_check else 0) + (25 if has_100_check else 0) + (20 if has_fixed_charge else 0)
-            passed = score >= 75
-            return {
-                "score": score,
-                "summary": "Tiered progressive bill calculation verified." if passed else "Check slab calculation math.",
-                "feedback": (
-                    "Great work calculating progressive tiered rates with fixed service charge."
-                    if passed else
-                    "Ensure you calculate the progressive slab amounts (first 100 at 1.50, next 100 at 2.50) and add the $25.00 fixed charge."
-                ),
-                "complexity": "O(1) time",
-                "concepts_demonstrated": ["Arithmetic Slabs", "Return Rounding"]
-            }
-
-        # Case 3: Traffic Signal / Strings
-        if "traffic" in title_lower or "signal" in title_lower:
-            has_red = "'r'" in lower_code or '"r"' in lower_code
-            has_yellow = "'y'" in lower_code or '"y"' in lower_code
-            has_green = "'g'" in lower_code or '"g"' in lower_code
-            score = (35 if has_red else 0) + (35 if has_green else 0) + (30 if has_yellow else 0)
-            passed = score >= 70
-            return {
-                "score": score,
-                "summary": "Signal state command verified." if passed else "Missing signal color branches.",
-                "feedback": "Correctly handled traffic signal codes for red, yellow and green lights." if passed else "Ensure 'R', 'Y', and 'G' are all handled.",
-                "complexity": "O(1) time",
-                "concepts_demonstrated": ["Branching", "String Matching"]
-            }
-
-        # Generic scenario evaluation
-        score = 85 if len(code) > 40 else 55
-        return {
-            "score": score,
-            "summary": "Code logic verified against problem requirements." if score >= 70 else "Needs further implementation.",
-            "feedback": "Good implementation meeting the core function requirements." if score >= 70 else "Please implement all requested conditions.",
-            "complexity": "O(1) execution",
-            "concepts_demonstrated": challenge.target_concepts
-        }
+        raise AIConnectionError(
+            f"Active internet connection required for live AI code evaluation. ({last_error})"
+        )
 
     @classmethod
     def _create_evaluation(
@@ -256,7 +174,7 @@ Return ONLY a valid JSON object matching this schema:
                 'status': status,
                 'summary': summary,
                 'approach_feedback': feedback,
-                'code_quality_feedback': feedback,
+                'code_quality_feedback': complexity,
                 'syntax_issues': syntax_issues or [],
                 'logic_issues': logic_issues or [],
                 'concepts_demonstrated': concepts_demonstrated or [],

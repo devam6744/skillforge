@@ -7,6 +7,7 @@ from apps.challenges.models import Challenge
 from apps.challenges.serializers import ChallengeDetailSerializer
 from apps.catalog.models import ProgrammingLanguage
 from apps.submissions.models import Submission
+from apps.challenges.services.gemini import AIConnectionError
 from apps.evaluation.services.evaluator import CodeEvaluationService
 
 
@@ -62,7 +63,13 @@ class ChallengeSubmitView(APIView):
             status=Submission.Status.EVALUATING
         )
 
-        eval_result = CodeEvaluationService.evaluate(submission)
+        try:
+            eval_result = CodeEvaluationService.evaluate(submission)
+        except AIConnectionError as exc:
+            return Response(
+                {"error": "INTERNET_REQUIRED", "detail": str(exc)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
 
         return Response({
             "submission_id": str(submission.id),

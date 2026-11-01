@@ -78,6 +78,7 @@ class PracticeSession(models.Model):
 
 class SessionChallenge(models.Model):
     class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
         ACTIVE = 'ACTIVE', 'Active'
         SOLVED = 'SOLVED', 'Solved'
         SKIPPED = 'SKIPPED', 'Skipped'

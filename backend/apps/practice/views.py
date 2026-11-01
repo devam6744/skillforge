@@ -11,6 +11,7 @@ from apps.practice.serializers import (
 from apps.challenges.serializers import SessionChallengeSerializer
 from apps.challenges.services.delivery import ChallengeDeliveryService
 from apps.challenges.models import Challenge
+from apps.challenges.services.gemini import AIConnectionError
 from apps.submissions.models import Submission
 from apps.evaluation.services.evaluator import CodeEvaluationService
 
@@ -139,7 +140,13 @@ class SessionCurrentChallengeView(APIView):
 
         if not active_sc:
             # Attempt to deliver next challenge
-            active_sc, is_finished, msg = ChallengeDeliveryService.get_or_create_next_challenge(session)
+            try:
+                active_sc, is_finished, msg = ChallengeDeliveryService.get_or_create_next_challenge(session)
+            except AIConnectionError as exc:
+                return Response(
+                    {"error": "INTERNET_REQUIRED", "detail": str(exc)},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
             if is_finished:
                 return Response(
                     {"session_finished": True, "detail": msg},
@@ -166,7 +173,13 @@ class SessionNextChallengeView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        session_challenge, is_finished, message = ChallengeDeliveryService.get_or_create_next_challenge(session)
+        try:
+            session_challenge, is_finished, message = ChallengeDeliveryService.get_or_create_next_challenge(session)
+        except AIConnectionError as exc:
+            return Response(
+                {"error": "INTERNET_REQUIRED", "detail": str(exc)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
 
         if is_finished or not session_challenge:
             return Response(
@@ -197,7 +210,13 @@ class SessionSkipChallengeView(APIView):
             active_sc.completed_at = timezone.now()
             active_sc.save(update_fields=['status', 'completed_at'])
 
-        session_challenge, is_finished, message = ChallengeDeliveryService.get_or_create_next_challenge(session)
+        try:
+            session_challenge, is_finished, message = ChallengeDeliveryService.get_or_create_next_challenge(session)
+        except AIConnectionError as exc:
+            return Response(
+                {"error": "INTERNET_REQUIRED", "detail": str(exc)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
 
         if is_finished or not session_challenge:
             return Response(
@@ -242,7 +261,13 @@ class SessionSubmitView(APIView):
             status=Submission.Status.EVALUATING
         )
 
-        eval_result = CodeEvaluationService.evaluate(submission)
+        try:
+            eval_result = CodeEvaluationService.evaluate(submission)
+        except AIConnectionError as exc:
+            return Response(
+                {"error": "INTERNET_REQUIRED", "detail": str(exc)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
 
         is_session_finished = False
         if eval_result.score >= 70:
