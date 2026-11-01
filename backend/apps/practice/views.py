@@ -3,11 +3,13 @@ from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from apps.practice.models import PracticeSession
+from apps.practice.models import PracticeSession, SessionChallenge
 from apps.practice.serializers import (
     PracticeSessionCreateSerializer,
     PracticeSessionDetailSerializer
 )
+from apps.challenges.serializers import SessionChallengeSerializer
+from apps.challenges.services.delivery import ChallengeDeliveryService
 
 
 class SessionListCreateView(generics.ListCreateAPIView):
@@ -116,5 +118,90 @@ class SessionCompleteView(APIView):
         session.save(update_fields=['status', 'completed_at', 'updated_at'])
 
         serializer = PracticeSessionDetailSerializer(session)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SessionCurrentChallengeView(APIView):
+    """
+    Get current active challenge for a session.
+    GET /api/v1/practice/sessions/<uuid:id>/current-challenge/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, id):
+        session = get_object_or_404(PracticeSession, id=id, user=request.user)
+        active_sc = session.session_challenges.filter(
+            status=SessionChallenge.Status.ACTIVE
+        ).select_related('challenge', 'challenge__primary_topic', 'challenge__language').first()
+
+        if not active_sc:
+            # Attempt to deliver next challenge
+            active_sc, is_finished, msg = ChallengeDeliveryService.get_or_create_next_challenge(session)
+            if is_finished:
+                return Response(
+                    {"session_finished": True, "detail": msg},
+                    status=status.HTTP_200_OK
+                )
+
+        serializer = SessionChallengeSerializer(active_sc)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SessionNextChallengeView(APIView):
+    """
+    Request or advance to the next challenge in this practice session.
+    POST /api/v1/practice/sessions/<uuid:id>/next-challenge/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        session = get_object_or_404(PracticeSession, id=id, user=request.user)
+
+        if session.status in [PracticeSession.Status.COMPLETED, PracticeSession.Status.ABANDONED]:
+            return Response(
+                {"detail": f"Cannot generate challenges for a {session.status.lower()} session."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        session_challenge, is_finished, message = ChallengeDeliveryService.get_or_create_next_challenge(session)
+
+        if is_finished or not session_challenge:
+            return Response(
+                {"session_finished": True, "detail": message},
+                status=status.HTTP_200_OK
+            )
+
+        serializer = SessionChallengeSerializer(session_challenge)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SessionSkipChallengeView(APIView):
+    """
+    Skip current challenge and advance to next.
+    POST /api/v1/practice/sessions/<uuid:id>/skip-challenge/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        session = get_object_or_404(PracticeSession, id=id, user=request.user)
+
+        active_sc = session.session_challenges.filter(
+            status=SessionChallenge.Status.ACTIVE
+        ).first()
+
+        if active_sc:
+            active_sc.status = SessionChallenge.Status.SKIPPED
+            active_sc.completed_at = timezone.now()
+            active_sc.save(update_fields=['status', 'completed_at'])
+
+        session_challenge, is_finished, message = ChallengeDeliveryService.get_or_create_next_challenge(session)
+
+        if is_finished or not session_challenge:
+            return Response(
+                {"session_finished": True, "detail": message},
+                status=status.HTTP_200_OK
+            )
+
+        serializer = SessionChallengeSerializer(session_challenge)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

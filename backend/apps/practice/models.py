@@ -74,3 +74,42 @@ class PracticeSession(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.language.name} ({self.status})"
+
+
+class SessionChallenge(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = 'ACTIVE', 'Active'
+        SOLVED = 'SOLVED', 'Solved'
+        SKIPPED = 'SKIPPED', 'Skipped'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    session = models.ForeignKey(
+        PracticeSession,
+        on_delete=models.CASCADE,
+        related_name='session_challenges'
+    )
+    challenge = models.ForeignKey(
+        'challenges.Challenge',
+        on_delete=models.CASCADE,
+        related_name='session_challenges'
+    )
+    question_order = models.PositiveIntegerField(default=1)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.ACTIVE
+    )
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['question_order']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['session', 'question_order'],
+                name='unique_session_question_order'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.session.id} - Q{self.question_order}: {self.challenge.title}"

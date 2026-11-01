@@ -115,5 +115,19 @@ export const api = {
       request<import('../types').PracticeSession>(`/practice/sessions/${id}/complete/`, {
         method: 'POST',
       }),
+    getCurrentChallenge: (sessionId: string) =>
+      request<import('../types').SessionChallengeData>(`/practice/sessions/${sessionId}/current-challenge/`),
+    getNextChallenge: (sessionId: string) =>
+      request<import('../types').SessionChallengeData>(`/practice/sessions/${sessionId}/next-challenge/`, {
+        method: 'POST',
+      }),
+    skipChallenge: (sessionId: string) =>
+      request<import('../types').SessionChallengeData>(`/practice/sessions/${sessionId}/skip-challenge/`, {
+        method: 'POST',
+      }),
+  },
+  challenges: {
+    getChallenge: (id: string) =>
+      request<import('../types').ChallengeDetail>(`/challenges/${id}/`),
   },
 };

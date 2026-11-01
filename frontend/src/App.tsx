@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from './services/api';
-import type { User, ProgrammingLanguage, PracticeSession } from './types';
+import type { User, ProgrammingLanguage, PracticeSession, SessionChallengeData } from './types';
 
 // Foundation-first practice presets for language fundamentals
 const CHALLENGE_PRESETS: Record<
@@ -316,14 +316,65 @@ export default function App() {
   const [onboardingLang, setOnboardingLang] = useState('Python');
   const [onboardingSaving, setOnboardingSaving] = useState(false);
 
-  // Catalog & Practice Lifecycle state (Phase 2)
+  // Catalog & Practice Lifecycle state (Phase 2 & 3)
   const [languages, setLanguages] = useState<ProgrammingLanguage[]>([]);
   const [activeSession, setActiveSession] = useState<PracticeSession | null>(null);
+  const [currentSessionChallenge, setCurrentSessionChallenge] = useState<SessionChallengeData | null>(null);
+  const [isLoadingChallenge, setIsLoadingChallenge] = useState(false);
   const [sessionHistory, setSessionHistory] = useState<PracticeSession[]>([]);
   const [selectedTopicSlug, setSelectedTopicSlug] = useState<string>('');
   const [sessionType, setSessionType] = useState<'TOPIC' | 'MIXED'>('TOPIC');
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [sessionTimer, setSessionTimer] = useState<number>(0);
+
+  // Load Challenge for Active Session
+  const loadSessionChallenge = async (sessionId: string) => {
+    setIsLoadingChallenge(true);
+    try {
+      const challengeData = await api.practice.getCurrentChallenge(sessionId);
+      if (challengeData.session_finished) {
+        setNotification('All challenges in this practice session are completed!');
+        setTimeout(() => setNotification(null), 4000);
+      } else {
+        setCurrentSessionChallenge(challengeData);
+        if (challengeData.challenge?.starter_code) {
+          setCurrentCode(challengeData.challenge.starter_code);
+        }
+        setReviewResult(null);
+        setShowHints(false);
+      }
+    } catch (err: any) {
+      console.error('Failed to load challenge:', err);
+    } finally {
+      setIsLoadingChallenge(false);
+    }
+  };
+
+  const handleNextChallenge = async () => {
+    if (!activeSession) return;
+    setIsLoadingChallenge(true);
+    try {
+      const nextData = await api.practice.getNextChallenge(activeSession.id);
+      if (nextData.session_finished) {
+        setNotification('🎉 Session complete! All requested challenges finished.');
+        setTimeout(() => setNotification(null), 5000);
+        await handleCompleteSession();
+      } else {
+        setCurrentSessionChallenge(nextData);
+        if (nextData.challenge?.starter_code) {
+          setCurrentCode(nextData.challenge.starter_code);
+        }
+        setReviewResult(null);
+        setShowHints(false);
+        setNotification(`Progressed to Problem ${nextData.question_order} of ${nextData.total_questions}`);
+        setTimeout(() => setNotification(null), 3500);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Could not load next challenge.');
+    } finally {
+      setIsLoadingChallenge(false);
+    }
+  };
 
   // Load Catalog Languages & Topics
   useEffect(() => {
@@ -348,6 +399,9 @@ export default function App() {
           setActiveSession(res.active_session);
           if (res.active_session) {
             setSelectedTrack(res.active_session.language_name);
+            loadSessionChallenge(res.active_session.id);
+          } else {
+            setCurrentSessionChallenge(null);
           }
         })
         .catch(() => {});
@@ -423,6 +477,7 @@ export default function App() {
         requested_question_count: selectedCount,
       });
       setActiveSession(newSession);
+      loadSessionChallenge(newSession.id);
       if (targetTopicSlug) {
         setSelectedTopicSlug(targetTopicSlug);
       }
@@ -442,6 +497,7 @@ export default function App() {
     try {
       await api.practice.abandonSession(activeSession.id);
       setActiveSession(null);
+      setCurrentSessionChallenge(null);
       setNotification('Session abandoned.');
       setTimeout(() => setNotification(null), 3000);
       loadHistory();
@@ -455,6 +511,7 @@ export default function App() {
     try {
       await api.practice.completeSession(activeSession.id);
       setActiveSession(null);
+      setCurrentSessionChallenge(null);
       setNotification('Session marked as completed! Great job!');
       setTimeout(() => setNotification(null), 4000);
       setWorkspaceTab('history');
@@ -464,14 +521,14 @@ export default function App() {
     }
   };
 
-  // Sync starter code when track changes
+  // Sync starter code when track changes and no active session
   useEffect(() => {
-    if (CHALLENGE_PRESETS[selectedTrack]) {
+    if (!activeSession && CHALLENGE_PRESETS[selectedTrack]) {
       setCurrentCode(CHALLENGE_PRESETS[selectedTrack].starterCode);
       setReviewResult(null);
       setShowHints(false);
     }
-  }, [selectedTrack]);
+  }, [selectedTrack, activeSession]);
 
   // Check existing session on load
   useEffect(() => {
@@ -909,16 +966,18 @@ export default function App() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
                     <span style={{ color: 'var(--text-muted)' }}>{selectedTrack}</span>
                     <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>/</span>
-                    <span style={{ color: '#c0c1ff' }}>{activeSession?.topic_name || activePreset.topic}</span>
+                    <span style={{ color: '#c0c1ff' }}>
+                      {currentSessionChallenge?.challenge.topic_name || activeSession?.topic_name || activePreset.topic}
+                    </span>
                   </div>
 
                   <span className="tag-badge tag-emerald" style={{ fontSize: 10, padding: '2px 8px' }}>
-                    {activeSession?.difficulty_mode || activePreset.difficulty}
+                    {currentSessionChallenge?.challenge.difficulty || activeSession?.difficulty_mode || activePreset.difficulty}
                   </span>
 
                   {activeSession && (
                     <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', background: 'rgba(255, 255, 255, 0.04)', padding: '2px 8px', borderRadius: 4 }}>
-                      Problem 1 of {activeSession.requested_question_count}
+                      Problem {currentSessionChallenge ? currentSessionChallenge.question_order : 1} of {currentSessionChallenge ? currentSessionChallenge.total_questions : activeSession.requested_question_count}
                     </span>
                   )}
                 </div>
@@ -979,8 +1038,30 @@ export default function App() {
                     </button>
                   )}
 
+                  {activeSession && (
+                    <button
+                      onClick={handleNextChallenge}
+                      disabled={isLoadingChallenge}
+                      className="btn-secondary-glass"
+                      style={{
+                        padding: '5px 12px',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: '#c0c1ff',
+                        borderColor: 'rgba(99, 102, 241, 0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                      title="Advance to next challenge in session"
+                    >
+                      <span>⏭</span>
+                      {isLoadingChallenge ? 'Loading...' : currentSessionChallenge?.is_last_question ? 'Finish Session' : 'Next Question'}
+                    </button>
+                  )}
+
                   <button
-                    onClick={() => setCurrentCode(activePreset.starterCode)}
+                    onClick={() => setCurrentCode(currentSessionChallenge?.challenge.starter_code || activePreset.starterCode)}
                     style={{
                       padding: '5px 12px',
                       borderRadius: 6,
@@ -996,7 +1077,7 @@ export default function App() {
 
                   <button
                     onClick={handleSubmitCode}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isLoadingChallenge}
                     className="btn-primary-gradient"
                     style={{
                       padding: '5px 18px',
@@ -1024,68 +1105,123 @@ export default function App() {
                   padding: '24px 28px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <span className="tag-badge tag-indigo">{selectedTrack.toUpperCase()} TRACK</span>
-                  <span className="tag-badge tag-emerald">{activePreset.difficulty}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)', marginLeft: 'auto' }}>
-                    {activePreset.topic}
-                  </span>
-                </div>
-
-                <h1 style={{ fontSize: 22, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', marginBottom: 16 }}>
-                  {activePreset.title}
-                </h1>
-
-                <div style={{ color: '#cbd5e1', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
-                  {activePreset.description}
-                </div>
-
-                <div style={{ marginBottom: 24 }}>
-                  <h4 style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 10 }}>
-                    CONSTRAINTS & POLICIES
-                  </h4>
-                  <ul style={{ paddingLeft: 18, color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.8 }}>
-                    {activePreset.constraints.map((c, i) => (
-                      <li key={i}>{c}</li>
-                    ))}
-                    <li style={{ color: 'var(--accent-cyan)' }}>
-                      Zero Sandbox Execution: Evaluated as untrusted text against structured Gemini 2.5 rubric.
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Collapsible Hints */}
-                <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
-                  <button
-                    onClick={() => setShowHints(!showHints)}
-                    style={{
-                      background: 'rgba(99, 102, 241, 0.1)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 8,
-                      padding: '8px 14px',
-                      color: 'var(--accent-cyan)',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                    }}
-                  >
-                    <span>💡</span> {showHints ? 'Hide Concept Hints' : 'Reveal Concept Hints'}
-                  </button>
-
-                  {showHints && (
-                    <div style={{ marginTop: 12, padding: 14, borderRadius: 8, background: 'rgba(15, 23, 42, 0.9)', border: '1px solid var(--border-subtle)' }}>
-                      {activePreset.hints.map((h, i) => (
-                        <p key={i} style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: i === activePreset.hints.length - 1 ? 0 : 8 }}>
-                          • {h}
-                        </p>
-                      ))}
+                {isLoadingChallenge ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 14 }}>
+                    <div className="pulsing-emerald-dot" style={{ width: 10, height: 10 }}></div>
+                    <div style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                      ✦ Calibrating Concept Challenge...
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (() => {
+                  const challenge = currentSessionChallenge?.challenge;
+                  const title = challenge?.title || activePreset.title;
+                  const statement = challenge?.statement || activePreset.description;
+                  const difficulty = challenge?.difficulty || activePreset.difficulty;
+                  const topic = challenge?.topic_name || activePreset.topic;
+                  const hints = challenge?.hints || activePreset.hints;
+                  const constraints = challenge?.constraints_text
+                    ? challenge.constraints_text.split('\n').filter((c) => c.trim().length > 0)
+                    : activePreset.constraints;
+                  const targetConcepts = challenge?.target_concepts || [];
+                  const origin = challenge?.origin || 'VERIFIED';
+
+                  return (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                        <span className="tag-badge tag-indigo">{selectedTrack.toUpperCase()} TRACK</span>
+                        <span className="tag-badge tag-emerald">{difficulty}</span>
+                        <span className={`tag-badge ${origin === 'AI_GENERATED' ? 'tag-cyan' : 'tag-indigo'}`} style={{ fontSize: 9 }}>
+                          {origin === 'AI_GENERATED' ? '✦ GEMINI 2.5' : '✦ FOUNDATION'}
+                        </span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)', marginLeft: 'auto' }}>
+                          {topic}
+                        </span>
+                      </div>
+
+                      <h1 style={{ fontSize: 22, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', marginBottom: 16 }}>
+                        {title}
+                      </h1>
+
+                      {targetConcepts.length > 0 && (
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+                          {targetConcepts.map((concept, idx) => (
+                            <span
+                              key={idx}
+                              style={{
+                                fontSize: 10,
+                                fontFamily: 'var(--font-mono)',
+                                color: 'var(--accent-cyan)',
+                                background: 'rgba(56, 189, 248, 0.08)',
+                                border: '1px solid rgba(56, 189, 248, 0.25)',
+                                padding: '2px 8px',
+                                borderRadius: 4,
+                              }}
+                            >
+                              {concept}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={{ color: '#cbd5e1', fontSize: 14, lineHeight: 1.7, marginBottom: 24, whiteSpace: 'pre-line' }}>
+                        {statement}
+                      </div>
+
+                      <div style={{ marginBottom: 24 }}>
+                        <h4 style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 10 }}>
+                          CONSTRAINTS & POLICIES
+                        </h4>
+                        <ul style={{ paddingLeft: 18, color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.8 }}>
+                          {constraints.map((c, i) => (
+                            <li key={i}>{c.replace(/^-\s*/, '')}</li>
+                          ))}
+                          <li style={{ color: 'var(--accent-cyan)' }}>
+                            Zero Sandbox Execution: Evaluated as untrusted text against structured Gemini 2.5 rubric.
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Collapsible Hints */}
+                      <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
+                        <button
+                          onClick={() => setShowHints(!showHints)}
+                          style={{
+                            background: 'rgba(99, 102, 241, 0.1)',
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: 8,
+                            padding: '8px 14px',
+                            color: 'var(--accent-cyan)',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                          }}
+                        >
+                          <span>💡</span> {showHints ? 'Hide Concept Hints' : 'Reveal Concept Hints'}
+                        </button>
+
+                        {showHints && (
+                          <div style={{ marginTop: 12, padding: 14, borderRadius: 8, background: 'rgba(15, 23, 42, 0.9)', border: '1px solid var(--border-subtle)' }}>
+                            {hints.length === 0 ? (
+                              <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+                                Focus on class invariants, boundary conditions, and defensive validations.
+                              </p>
+                            ) : (
+                              hints.map((h, i) => (
+                                <p key={i} style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: i === hints.length - 1 ? 0 : 8 }}>
+                                  • {h}
+                                </p>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Right Column: Code Editor & Gemini AI Review */}

@@ -5,6 +5,9 @@ from apps.practice.views import (
     SessionAbandonView,
     SessionCompleteView,
     ActiveSessionView,
+    SessionCurrentChallengeView,
+    SessionNextChallengeView,
+    SessionSkipChallengeView,
 )
 
 app_name = 'practice'
@@ -15,5 +18,8 @@ urlpatterns = [
     path('sessions/<uuid:id>/', SessionDetailView.as_view(), name='session-detail'),
     path('sessions/<uuid:id>/abandon/', SessionAbandonView.as_view(), name='session-abandon'),
     path('sessions/<uuid:id>/complete/', SessionCompleteView.as_view(), name='session-complete'),
+    path('sessions/<uuid:id>/current-challenge/', SessionCurrentChallengeView.as_view(), name='session-current-challenge'),
+    path('sessions/<uuid:id>/next-challenge/', SessionNextChallengeView.as_view(), name='session-next-challenge'),
+    path('sessions/<uuid:id>/skip-challenge/', SessionSkipChallengeView.as_view(), name='session-skip-challenge'),
 ]
 

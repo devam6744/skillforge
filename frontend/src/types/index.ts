@@ -58,3 +58,36 @@ export interface PracticeSession {
   created_at: string;
   updated_at: string;
 }
+
+export interface ChallengeDetail {
+  id: string;
+  title: string;
+  statement: string;
+  constraints_text: string;
+  examples: Array<{ input: string; output: string }>;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  practice_mode: 'CODING' | 'DEBUG';
+  target_concepts: string[];
+  starter_code: string;
+  hints: string[];
+  language_name: string;
+  language_slug: string;
+  topic_name: string;
+  topic_slug: string;
+  origin: string;
+  quality_status: string;
+  created_at: string;
+}
+
+export interface SessionChallengeData {
+  id: string;
+  question_order: number;
+  total_questions: number;
+  status: 'ACTIVE' | 'SOLVED' | 'SKIPPED';
+  is_last_question: boolean;
+  challenge: ChallengeDetail;
+  started_at: string;
+  completed_at?: string | null;
+  session_finished?: boolean;
+  detail?: string;
+}

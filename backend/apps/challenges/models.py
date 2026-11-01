@@ -45,6 +45,9 @@ class Challenge(models.Model):
         default=PracticeMode.CODING
     )
     target_concepts = models.JSONField(default=list, blank=True)
+    starter_code = models.TextField(blank=True, default='')
+    hints_json = models.JSONField(default=list, blank=True)
+    sample_solution = models.TextField(blank=True, default='')
     evaluation_rubric_version = models.CharField(max_length=50, default='v1.0')
     origin = models.CharField(max_length=50, default='AI_GENERATED')
     quality_status = models.CharField(
