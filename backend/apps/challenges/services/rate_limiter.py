@@ -46,3 +46,4 @@ def session_ai_lock(session_id: str, timeout_seconds: int = 15):
     finally:
         if acquired:
             cache.delete(lock_key)
+

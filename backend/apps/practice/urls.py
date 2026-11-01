@@ -8,6 +8,7 @@ from apps.practice.views import (
     SessionCurrentChallengeView,
     SessionNextChallengeView,
     SessionSkipChallengeView,
+    SessionSubmitView,
 )
 
 app_name = 'practice'
@@ -21,5 +22,6 @@ urlpatterns = [
     path('sessions/<uuid:id>/current-challenge/', SessionCurrentChallengeView.as_view(), name='session-current-challenge'),
     path('sessions/<uuid:id>/next-challenge/', SessionNextChallengeView.as_view(), name='session-next-challenge'),
     path('sessions/<uuid:id>/skip-challenge/', SessionSkipChallengeView.as_view(), name='session-skip-challenge'),
+    path('sessions/<uuid:id>/submit/', SessionSubmitView.as_view(), name='session-submit'),
 ]
 

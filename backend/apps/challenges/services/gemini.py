@@ -43,7 +43,10 @@ class GeminiChallengeService:
             from google import genai
             from google.genai import types
 
-            client = genai.Client(api_key=api_key)
+            client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(client_args={'verify': False})
+            )
             model_name = getattr(settings, 'GEMINI_MODEL', 'gemini-2.5-flash')
 
             response = client.models.generate_content(
@@ -71,28 +74,29 @@ class GeminiChallengeService:
     @classmethod
     def _build_prompt(cls, language: str, topic: str, difficulty: str, mode: str) -> str:
         return f"""You are the senior technical curriculum author for SkillForge, a software engineering skill platform.
-Your task is to generate one high-quality, practical coding practice challenge for:
+Your task is to generate one high-quality, university-level practical coding challenge based on a real-world scenario for:
 - Language: {language}
 - Topic: {topic}
 - Difficulty: {difficulty}
 - Practice Mode: {mode}
 
 CRITICAL RULES:
-1. DO NOT generate competitive LeetCode DSA trivia (NO dynamic programming, binary search trees, graph BFS/DFS, array permutation riddles).
-2. DO generate real-world software engineering exercises that test core language concepts:
-   - Idiomatic language syntax and standard library features
-   - Defensive programming, boundary checking, and robust error/exception handling
-   - Object-oriented design, encapsulation, and class invariants
-   - Memory management, pointers, and reference semantics where applicable
-3. Provide clean, well-commented starter boilerplate with function signatures and clear docstrings.
+1. DO NOT generate competitive LeetCode DSA trivia (NO dynamic programming matrices, binary search trees, graph BFS/DFS, array permutation riddles).
+2. DO generate real-world, university-level practical scenario programming problems:
+   - For condition/branching topics: voter age eligibility verification (must be >= 18, negative age invalid), movie ticket concession pricing, progressive electricity slab bill calculation, traffic signal controller.
+   - For loop/function topics: student marksheet average & topper finder, simple/compound interest calculator, discount aggregator.
+   - For OOP/classes topics: bank account deposit/withdrawal with invariants, student grade card encapsulation, library book return tracker.
+   - For pointers/memory (C/C++): safe in-place value swapping with NULL checks, pointer traversal.
+3. CRITICAL STARTER CODE RULE: The "starter_code" MUST ONLY contain the clean function/class signature, parameters, docstring, and a "pass" or "// TODO: Write your logic here" comment. NEVER LEAK THE SOLUTION CODE in starter_code!
+4. The "statement" must clearly describe the scenario, input arguments, expected return values, and edge cases.
 
 Return ONLY a valid JSON object with the following schema:
 {{
-  "title": "Short descriptive title of the practical exercise",
-  "statement": "Detailed markdown problem statement explaining the requirements, background, and expected behavior",
-  "constraints_text": "Bullet list of constraints (e.g. time/space limits, exception rules, mutation policies)",
+  "title": "Short descriptive title of the practical scenario",
+  "statement": "Detailed markdown problem statement explaining the scenario requirements, input parameters, and expected return values",
+  "constraints_text": "Bullet list of constraints (e.g. types, boundary rules, return types)",
   "target_concepts": ["List", "Of", "3-5", "Specific", "Language", "Concepts"],
-  "starter_code": "The complete boilerplate code the user will edit in their editor",
+  "starter_code": "The empty boilerplate skeleton with pass or // TODO comment (NO SOLUTION CODE)",
   "hints": ["Progressive hint 1", "Progressive hint 2"],
   "examples": [
     {{"input": "sample input", "output": "sample output"}}
@@ -140,3 +144,4 @@ Return ONLY a valid JSON object with the following schema:
     def _compute_hash(statement: str, starter_code: str) -> str:
         content = f"{statement.strip()}::{starter_code.strip()}"
         return hashlib.sha256(content.encode('utf-8')).hexdigest()
+

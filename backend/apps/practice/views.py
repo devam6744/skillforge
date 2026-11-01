@@ -10,6 +10,9 @@ from apps.practice.serializers import (
 )
 from apps.challenges.serializers import SessionChallengeSerializer
 from apps.challenges.services.delivery import ChallengeDeliveryService
+from apps.challenges.models import Challenge
+from apps.submissions.models import Submission
+from apps.evaluation.services.evaluator import CodeEvaluationService
 
 
 class SessionListCreateView(generics.ListCreateAPIView):
@@ -204,4 +207,65 @@ class SessionSkipChallengeView(APIView):
 
         serializer = SessionChallengeSerializer(session_challenge)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SessionSubmitView(APIView):
+    """
+    Submits student code for evaluation against a challenge in a practice session.
+    POST /api/v1/practice/sessions/<uuid:id>/submit/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        session = get_object_or_404(PracticeSession, id=id, user=request.user)
+
+        if session.status in [PracticeSession.Status.COMPLETED, PracticeSession.Status.ABANDONED]:
+            return Response(
+                {"detail": f"Cannot submit solutions for a {session.status.lower()} session."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        challenge_id = request.data.get('challenge_id')
+        source_code = request.data.get('source_code', '')
+
+        if not challenge_id:
+            return Response({"detail": "challenge_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        challenge = get_object_or_404(Challenge, id=challenge_id)
+
+        submission = Submission.objects.create(
+            user=request.user,
+            session=session,
+            challenge=challenge,
+            language=session.language,
+            source_code=source_code,
+            status=Submission.Status.EVALUATING
+        )
+
+        eval_result = CodeEvaluationService.evaluate(submission)
+
+        is_session_finished = False
+        if eval_result.score >= 70:
+            solved_count = session.session_challenges.filter(status=SessionChallenge.Status.SOLVED).count()
+            if solved_count >= session.requested_question_count:
+                session.status = PracticeSession.Status.COMPLETED
+                session.completed_at = timezone.now()
+                session.save(update_fields=['status', 'completed_at', 'updated_at'])
+                is_session_finished = True
+
+        return Response({
+            "submission_id": str(submission.id),
+            "score": eval_result.score,
+            "status": eval_result.status,
+            "is_solved": eval_result.score >= 70,
+            "is_session_finished": is_session_finished,
+            "summary": eval_result.summary,
+            "feedback": eval_result.approach_feedback,
+            "syntax_issues": eval_result.syntax_issues,
+            "logic_issues": eval_result.logic_issues,
+            "concepts_demonstrated": eval_result.concepts_demonstrated,
+            "complexity": "O(1) execution",
+            "timestamp": eval_result.completed_at.strftime("%I:%M:%S %p") if eval_result.completed_at else timezone.now().strftime("%I:%M:%S %p")
+        }, status=status.HTTP_200_OK)
+
 

@@ -141,3 +141,99 @@ class ChallengesTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], 'Test Dict Challenge')
         self.assertEqual(response.data['hints'], ['Use copy()'])
+
+    def test_session_submit_and_evaluation_flow(self):
+        """Verify code submission endpoint, syntax validation, scoring, and status update."""
+        session = PracticeSession.objects.create(
+            user=self.user,
+            language=self.language,
+            practice_type=PracticeSession.PracticeType.TOPIC,
+            selected_topic=self.topic,
+            difficulty_mode=PracticeSession.DifficultyMode.EASY,
+            practice_mode=PracticeSession.PracticeMode.CODING,
+            requested_question_count=1,
+            status=PracticeSession.Status.IN_PROGRESS
+        )
+        challenge = Challenge.objects.create(
+            language=self.language,
+            primary_topic=self.topic,
+            title='Voter Age & Eligibility Verification System',
+            statement='Return "Eligible to Vote" if age >= 18, else "Invalid age: cannot be negative" if age < 0, else "Not eligible: must be at least 18 years old".',
+            starter_code='def check_voter_eligibility(age: int) -> str:\n    pass\n',
+            target_concepts=['Conditionals', 'Boundary Checking']
+        )
+        SessionChallenge.objects.create(
+            session=session,
+            challenge=challenge,
+            question_order=1,
+            status=SessionChallenge.Status.ACTIVE
+        )
+
+        submit_url = reverse('practice:session-submit', kwargs={'id': session.id})
+
+        # 1. Unchanged boilerplate submit -> score 10
+        bp_res = self.client.post(submit_url, {
+            'challenge_id': str(challenge.id),
+            'source_code': challenge.starter_code
+        })
+        self.assertEqual(bp_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(bp_res.data['score'], 10)
+        self.assertFalse(bp_res.data['is_solved'])
+
+        # 2. Syntax error submit -> score 20
+        syn_res = self.client.post(submit_url, {
+            'challenge_id': str(challenge.id),
+            'source_code': 'def check_voter_eligibility(age):\nif age > 18'
+        })
+        self.assertEqual(syn_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(syn_res.data['score'], 20)
+        self.assertTrue(len(syn_res.data['syntax_issues']) > 0)
+
+        # 3. Correct solution -> score >= 70, is_solved=True, session completed
+        sol_code = """
+def check_voter_eligibility(age: int) -> str:
+    if age < 0:
+        return 'Invalid age: cannot be negative'
+    if age >= 18:
+        return 'Eligible to Vote'
+    return 'Not eligible: must be at least 18 years old'
+"""
+        sol_res = self.client.post(submit_url, {
+            'challenge_id': str(challenge.id),
+            'source_code': sol_code
+        })
+        self.assertEqual(sol_res.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(sol_res.data['score'], 70)
+        self.assertTrue(sol_res.data['is_solved'])
+        self.assertTrue(sol_res.data['is_session_finished'])
+
+        # Verify database update: SessionChallenge marked as SOLVED
+        sc = SessionChallenge.objects.get(session=session, challenge=challenge)
+        self.assertEqual(sc.status, SessionChallenge.Status.SOLVED)
+
+    def test_standalone_challenge_submit_api(self):
+        """Verify standalone direct challenge submit endpoint."""
+        challenge = Challenge.objects.create(
+            language=self.language,
+            primary_topic=self.topic,
+            title='Voter Age Verification',
+            statement='Check age eligibility',
+            starter_code='def check_voter_eligibility(age): pass'
+        )
+        url = reverse('challenges:challenge-submit', kwargs={'id': challenge.id})
+        sol_code = """
+def check_voter_eligibility(age: int) -> str:
+    if age < 0:
+        return 'Invalid age: cannot be negative'
+    if age >= 18:
+        return 'Eligible to Vote'
+    return 'Not eligible: must be at least 18 years old'
+"""
+        response = self.client.post(url, {
+            'source_code': sol_code
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(response.data['score'], 70)
+        self.assertTrue(response.data['is_solved'])
+
+

@@ -125,9 +125,46 @@ export const api = {
       request<import('../types').SessionChallengeData>(`/practice/sessions/${sessionId}/skip-challenge/`, {
         method: 'POST',
       }),
+    submitCode: (sessionId: string, challengeId: string, sourceCode: string) =>
+      request<{
+        submission_id: string;
+        score: number;
+        status: string;
+        is_solved: boolean;
+        is_session_finished: boolean;
+        summary: string;
+        feedback: string;
+        syntax_issues: string[];
+        logic_issues: string[];
+        concepts_demonstrated: string[];
+        complexity: string;
+        timestamp: string;
+      }>(`/practice/sessions/${sessionId}/submit/`, {
+        method: 'POST',
+        body: JSON.stringify({ challenge_id: challengeId, source_code: sourceCode }),
+      }),
   },
   challenges: {
     getChallenge: (id: string) =>
       request<import('../types').ChallengeDetail>(`/challenges/${id}/`),
+    submitCode: (challengeId?: string, sourceCode: string = '', languageSlug?: string) =>
+      request<{
+        submission_id: string;
+        challenge_id: string;
+        challenge_title: string;
+        score: number;
+        status: string;
+        is_solved: boolean;
+        summary: string;
+        feedback: string;
+        syntax_issues: string[];
+        logic_issues: string[];
+        concepts_demonstrated: string[];
+        complexity: string;
+        timestamp: string;
+      }>('/challenges/submit/', {
+        method: 'POST',
+        body: JSON.stringify({ challenge_id: challengeId, source_code: sourceCode, language_slug: languageSlug }),
+      }),
   },
 };

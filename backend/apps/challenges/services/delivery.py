@@ -151,3 +151,4 @@ class ChallengeDeliveryService:
 
         topic_index = (question_order - 1) % len(topics)
         return topics[topic_index]
+

@@ -55,3 +55,4 @@ class SessionChallengeSerializer(serializers.ModelSerializer):
 
     def get_is_last_question(self, obj) -> bool:
         return obj.question_order >= obj.session.requested_question_count
+

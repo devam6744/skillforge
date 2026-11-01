@@ -22,258 +22,176 @@ const CHALLENGE_PRESETS: Record<
   }
 > = {
   Python: {
-    title: 'Config Parser: Dictionary Defaults & Nested Access',
-    topic: 'Lists, Dicts & Comprehensions',
+    title: 'Voter Age & Eligibility Verification System',
+    topic: 'Variables, Types & Flow Control',
     difficulty: 'EASY',
     description:
-      'Write a function `parse_app_config(user_settings: dict) -> dict` that validates and cleanses an application settings dictionary without raising KeyErrors:\n' +
-      '1. Validate "theme": must be one of ["light", "dark", "system"]. If missing or invalid, default to "system".\n' +
-      '2. Validate "max_retries": must be an integer >= 0. If missing or invalid, default to 3.\n' +
-      '3. Clean "features": extract the list of strings, trim extra whitespace from each, and filter out any empty strings.\n' +
-      '4. Return a clean dictionary containing exactly {"theme", "max_retries", "features"}.',
+      'You are building a citizen verification module for a digital voter registration portal.\n\n' +
+      'Write a function `check_voter_eligibility(age: int) -> str` that verifies eligibility based on these rules:\n' +
+      '1. If `age < 0`, return `"Invalid age: cannot be negative"`.\n' +
+      '2. If `age >= 18`, return `"Eligible to Vote"`.\n' +
+      '3. If `age < 18` (and >= 0), return `"Not eligible: must be at least 18 years old"`.\n\n' +
+      'Example:\n' +
+      'check_voter_eligibility(20) -> "Eligible to Vote"\n' +
+      'check_voter_eligibility(16) -> "Not eligible: must be at least 18 years old"\n' +
+      'check_voter_eligibility(-5) -> "Invalid age: cannot be negative"',
     constraints: [
-      'user_settings is guaranteed to be a dictionary',
-      'Never mutate the original user_settings dictionary directly',
-      'Handles missing or malformed keys gracefully without raising KeyError',
+      'Input age is guaranteed to be an integer',
+      'Return the exact output strings matching the specification',
+      'Handle negative age values before checking the voting threshold',
     ],
-    starterCode: `def parse_app_config(user_settings: dict) -> dict:
+    starterCode: `def check_voter_eligibility(age: int) -> str:
     """
-    Validates user settings and returns a sanitized config dictionary with safe defaults.
+    Returns voter eligibility status string based on the given age.
     """
-    # 1. Validate theme
-    allowed_themes = {"light", "dark", "system"}
-    theme = user_settings.get("theme")
-    if theme not in allowed_themes:
-        theme = "system"
-
-    # 2. Extract and validate max_retries
-    retries = user_settings.get("max_retries", 3)
-    if not isinstance(retries, int) or retries < 0:
-        retries = 3
-
-    # 3. Clean features list with comprehension
-    raw_features = user_settings.get("features", [])
-    features = [
-        f.strip()
-        for f in raw_features
-        if isinstance(f, str) and f.strip()
-    ]
-
-    return {
-        "theme": theme,
-        "max_retries": retries,
-        "features": features,
-    }
+    # TODO: Write your condition logic here
+    pass
 `,
     hints: [
-      'Use `user_settings.get(key, default)` to avoid KeyErrors when keys might be missing.',
-      'List comprehensions `[f.strip() for f in raw if ...]` are clean and idiomatic in Python.',
+      'Check for negative values first: `if age < 0:`.',
+      'Use `elif age >= 18:` to identify eligible voters.',
     ],
     sampleReview: {
-      score: 98,
-      complexity: 'Clean O(N) Processing • Defensive Programming',
-      strength: 'Excellent use of dict.get() for fallback values and idiomatic list comprehension for string cleaning.',
-      adaptiveNote: 'Dictionary fundamentals verified! Next concept: Object-Oriented Classes & Custom Exception Handling.',
+      score: 95,
+      complexity: 'O(1) time • O(1) space',
+      strength: 'Clean conditional branching properly checking boundary and negative conditions.',
+      adaptiveNote: 'Foundational conditionals verified! Next: progressive tiered slab calculators.',
     },
   },
   JavaScript: {
-    title: 'User Profile Normalizer: Nullish Coalescing & Destructuring',
-    topic: 'Arrays, Objects & Destructuring',
+    title: 'Cinema Movie Ticket Pricing Calculator',
+    topic: 'Variables, Primitives & Operators',
     difficulty: 'EASY',
     description:
-      'Write a function `normalizeUserProfile(rawUser)` that normalizes raw API payloads into safe client objects:\n' +
-      '1. Extract `username` and `email` using destructuring; default `username` to "Anonymous" and `email` to "guest@example.com" if missing or nullish.\n' +
-      '2. Safely access `preferences.theme` using optional chaining (`?.`) and nullish coalescing (`??`), defaulting to "system".\n' +
-      '3. Extract `roles` array; if missing, default to `["reader"]`.\n' +
-      '4. Return `{ username, email, theme, roles }`.',
+      'Write a function `calculateTicketPrice(age, isStudent)` for a cinema ticketing kiosk:\n\n' +
+      '1. If `age < 0` or typeof age !== "number", return `-1` (Invalid age).\n' +
+      '2. Under 5 years old: Free (`0.0`).\n' +
+      '3. Senior citizens (65 and older): `$10.0`.\n' +
+      '4. Students (`isStudent === true` and age between 5 and 64): `$12.0`.\n' +
+      '5. General adult admission (all other cases): `$16.0`.\n\n' +
+      'Example:\n' +
+      'calculateTicketPrice(22, true) -> 12\n' +
+      'calculateTicketPrice(70, false) -> 10\n' +
+      'calculateTicketPrice(-3, false) -> -1',
     constraints: [
-      'Must handle rawUser being null or undefined without throwing TypeError',
-      'Use nullish coalescing (??) rather than logical OR (||) to preserve valid empty strings',
+      'Return a numeric price value',
+      'Use strict equality (===) for boolean checking',
     ],
-    starterCode: `export function normalizeUserProfile(rawUser = {}) {
-  const safeUser = rawUser ?? {};
-  const { username = 'Anonymous', email } = safeUser;
-  
-  // Safe optional chaining + nullish coalescing
-  const theme = safeUser.preferences?.theme ?? 'system';
-  const roles = Array.isArray(safeUser.roles) && safeUser.roles.length > 0 
-    ? safeUser.roles 
-    : ['reader'];
-
-  return {
-    username,
-    email: email ?? 'guest@example.com',
-    theme,
-    roles,
-  };
+    starterCode: `export function calculateTicketPrice(age, isStudent) {
+  // TODO: Write your ticket pricing logic here
 }
 `,
     hints: [
-      'Nullish coalescing (`??`) only falls back on `null` or `undefined`, preventing bugs with empty strings or 0.',
-      'Optional chaining (`obj?.preferences?.theme`) prevents runtime crashes if parent objects are undefined.',
+      'Check for negative age or invalid type first.',
+      'Order conditions: Under 5, then Senior (>= 65), then Student, then default.',
     ],
     sampleReview: {
       score: 96,
-      complexity: 'O(1) Direct Extraction • Safe Prototype Guards',
-      strength: 'Proper modern JS syntax using optional chaining and nullish coalescing to prevent undefined property errors.',
-      adaptiveNote: 'Object destructuring solid. Ready for Asynchronous Promises and Error Handlers.',
+      complexity: 'O(1) time • O(1) space',
+      strength: 'Solid strict-equality checking and progressive tier checks.',
+      adaptiveNote: 'Primitives & operators verified. Advancing to Array processing.',
     },
   },
   'C++': {
-    title: 'Safe Counter: Class Invariants & Encapsulation',
-    topic: 'Classes & Object-Oriented C++',
+    title: 'Traffic Light Signal Command System',
+    topic: 'Syntax, Variables & Control Flow',
     difficulty: 'EASY',
     description:
-      'Implement a C++ class `BoundedCounter` with strict state encapsulation:\n' +
-      '1. Private member variables `count` and `maxLimit` initialized via constructor (default limit = 100).\n' +
-      '2. `bool increment()`: increments count by 1 if below `maxLimit` and returns true; otherwise leaves count unchanged and returns false.\n' +
-      '3. `int getCount() const`: returns the current count (must be marked const).\n' +
-      '4. `void reset()`: resets count back to 0.',
+      'Write a C++ function `std::string getTrafficSignalAction(char lightCode)` for an autonomous vehicle navigation module:\n\n' +
+      '1. If `lightCode` is \'R\' or \'r\', return `"STOP"`.\n' +
+      '2. If `lightCode` is \'Y\' or \'y\', return `"PREPARE_TO_STOP"`.\n' +
+      '3. If `lightCode` is \'G\' or \'g\', return `"GO"`.\n' +
+      '4. For any other character, return `"INVALID_SIGNAL"`.\n\n' +
+      'Example:\n' +
+      'getTrafficSignalAction(\'R\') -> "STOP"\n' +
+      'getTrafficSignalAction(\'g\') -> "GO"\n' +
+      'getTrafficSignalAction(\'X\') -> "INVALID_SIGNAL"',
     constraints: [
-      'All member variables must be private',
-      'getCount() must be const-qualified to prevent accidental mutation',
-      'Use a constructor member initializer list',
+      'Handle both uppercase and lowercase lightCode characters',
+      'Return standard std::string',
     ],
-    starterCode: `class BoundedCounter {
-private:
-    int count;
-    int maxLimit;
+    starterCode: `#include <string>
 
-public:
-    // Constructor with member initializer list
-    BoundedCounter(int limit = 100) : count(0), maxLimit(limit) {}
-
-    bool increment() {
-        if (count < maxLimit) {
-            count++;
-            return true;
-        }
-        return false;
-    }
-
-    int getCount() const {
-        return count;
-    }
-
-    void reset() {
-        count = 0;
-    }
-};
+std::string getTrafficSignalAction(char lightCode) {
+    // TODO: Return navigation action based on signal light
+    return "";
+}
 `,
     hints: [
-      'Use member initializer lists `BoundedCounter(...) : count(0), maxLimit(limit) {}` for efficiency.',
-      'Mark query methods that do not modify state with the `const` keyword.',
+      'Use a switch statement or if/else if with single quotes for characters (\'R\', \'r\').',
     ],
     sampleReview: {
-      score: 97,
-      complexity: 'O(1) Inlined Methods • Zero Dynamic Heap Overhead',
-      strength: 'Strict data encapsulation and const-correctness. Constructor initializer list used properly.',
-      adaptiveNote: 'Class invariants verified. Advancing to Pointers and RAII Smart Pointers (std::unique_ptr).',
+      score: 95,
+      complexity: 'O(1) Execution • Zero Heap Overhead',
+      strength: 'Efficient character switch handling both upper and lower case inputs.',
+      adaptiveNote: 'C++ basic syntax verified! Next: References and Pass-by-reference.',
     },
   },
   Java: {
-    title: 'Bank Account: Encapsulation & Robust Validations',
-    topic: 'Classes, Objects & Encapsulation',
+    title: 'Voter Registration Age Verification',
+    topic: 'Syntax, Primitives & Branching',
     difficulty: 'EASY',
     description:
-      'Implement a `BankAccount` class demonstrating fundamental OOP encapsulation and defensive programming:\n' +
-      '1. Private fields `String accountNumber` and `double balance`.\n' +
-      '2. Constructor taking `(accountNumber, initialBalance)`. If `initialBalance < 0`, throw an `IllegalArgumentException`.\n' +
-      '3. `void deposit(double amount)`: adds amount to balance if `amount > 0`; otherwise throws `IllegalArgumentException`.\n' +
-      '4. `boolean withdraw(double amount)`: deducts amount if `amount > 0` and `amount <= balance`, returning true; otherwise returns false.\n' +
-      '5. `double getBalance()`: returns the current balance.',
+      'In `VoterEligibility.java`, implement `public static String checkEligibility(int age)`:\n\n' +
+      '1. If `age < 0`: return `"Invalid Age"`.\n' +
+      '2. If `age >= 18`: return `"Eligible to Vote"`.\n' +
+      '3. If `age < 18`: return `"Not Eligible to Vote"`.\n\n' +
+      'Example:\n' +
+      'checkEligibility(21) -> "Eligible to Vote"\n' +
+      'checkEligibility(15) -> "Not Eligible to Vote"\n' +
+      'checkEligibility(-2) -> "Invalid Age"',
     constraints: [
-      'balance must never become negative',
-      'accountNumber should be marked final to guarantee immutability',
-      'Throw standard IllegalArgumentException on invalid deposit amounts',
+      'Return the exact strings specified in the requirements',
+      'Static method with primitive int parameter',
     ],
-    starterCode: `public class BankAccount {
-    private final String accountNumber;
-    private double balance;
-
-    public BankAccount(String accountNumber, double initialBalance) {
-        if (initialBalance < 0) {
-            throw new IllegalArgumentException("Initial balance cannot be negative");
-        }
-        this.accountNumber = accountNumber;
-        this.balance = initialBalance;
-    }
-
-    public void deposit(double amount) {
-        if (amount <= 0) {
-            throw new IllegalArgumentException("Deposit amount must be positive");
-        }
-        this.balance += amount;
-    }
-
-    public boolean withdraw(double amount) {
-        if (amount > 0 && amount <= this.balance) {
-            this.balance -= amount;
-            return true;
-        }
-        return false;
-    }
-
-    public double getBalance() {
-        return this.balance;
-    }
-
-    public String getAccountNumber() {
-        return this.accountNumber;
+    starterCode: `public class VoterEligibility {
+    public static String checkEligibility(int age) {
+        // TODO: Implement eligibility logic
+        return "";
     }
 }
 `,
     hints: [
-      'Never provide a direct setter for sensitive state like balance; only allow modifications through domain methods.',
-      'Always throw descriptive exceptions when callers violate method preconditions.',
+      'Check `if (age < 0)` first, followed by `else if (age >= 18)`.',
     ],
     sampleReview: {
       score: 98,
-      complexity: 'O(1) Encapsulated State Management',
-      strength: 'Excellent domain encapsulation, defensive argument checking, and proper immutability on accountNumber.',
-      adaptiveNote: 'OOP encapsulation verified! Next concept: Inheritance & Interface Polymorphism.',
+      complexity: 'O(1) Memory & Time',
+      strength: 'Clean Java static method with proper conditional branches.',
+      adaptiveNote: 'Java syntax verified! Next: Object Encapsulation and Getters/Setters.',
     },
   },
   C: {
-    title: 'Safe String Case Converter: Pointer Traversal',
-    topic: 'Pointers & Memory Addresses',
+    title: 'Voter Age Eligibility Checker',
+    topic: 'Data Types, Operators & Flow Control',
     difficulty: 'EASY',
     description:
-      'Write a function `void to_uppercase(char *str)` that converts all lowercase English letters in a null-terminated string to uppercase in-place:\n' +
-      '1. Safely check for `NULL` pointer before dereferencing to prevent segmentation faults.\n' +
-      '2. Traverse the character buffer using pointer arithmetic until encountering the null terminator `\'\\0\'`.\n' +
-      '3. If a character is between `\'a\'` and `\'z\'`, convert it to uppercase by subtracting `(\'a\' - \'A\')` or 32.\n' +
-      '4. Modify the buffer in-place without allocating auxiliary memory.',
+      'Write a C function `int check_voter_eligibility(int age)`:\n\n' +
+      '1. If `age < 0`, return `-1` (Invalid input).\n' +
+      '2. If `age >= 18`, return `1` (Eligible to vote).\n' +
+      '3. If `age < 18` (and >= 0), return `0` (Not eligible to vote).\n\n' +
+      'Example:\n' +
+      'check_voter_eligibility(19) -> 1\n' +
+      'check_voter_eligibility(14) -> 0\n' +
+      'check_voter_eligibility(-1) -> -1',
     constraints: [
-      'Must handle NULL pointer input without crashing',
-      'Must not modify punctuation, digits, or characters already uppercase',
-      'Memory constraint: O(1) in-place modification',
+      'Return integer codes: 1 for eligible, 0 for not eligible, -1 for invalid',
+      'Use standard C integer conditionals',
     ],
-    starterCode: `#include <stdio.h>
-
-void to_uppercase(char *str) {
-    if (str == NULL) {
-        return;
-    }
-
-    char *ptr = str;
-    while (*ptr != '\\0') {
-        if (*ptr >= 'a' && *ptr <= 'z') {
-            *ptr = *ptr - ('a' - 'A');
-        }
-        ptr++;
-    }
+    starterCode: `int check_voter_eligibility(int age) {
+    // TODO: Return 1 if eligible, 0 if not eligible, -1 if negative
+    return 0;
 }
 `,
     hints: [
-      'Always perform a NULL check `if (str == NULL) return;` at the beginning of C functions receiving pointers.',
-      'In ASCII, lowercase letters are continuous from 97 (\'a\') to 122 (\'z\'), and uppercase are from 65 (\'A\') to 90 (\'Z\').',
+      'Check `age < 0` first and return -1.',
+      'Check `age >= 18` and return 1, else return 0.',
     ],
     sampleReview: {
       score: 97,
-      complexity: 'O(N) In-Place Pointer Traversal • O(1) Extra Space',
-      strength: 'Proper NULL check guarding against segmentation faults, with idiomatic pointer arithmetic.',
-      adaptiveNote: 'Pointer fundamentals verified! Advancing to Structs and Dynamic Heap Allocation (malloc/free).',
+      complexity: 'O(1) Inlined Instruction',
+      strength: 'Standard C branch logic with clear return status codes.',
+      adaptiveNote: 'C control flow verified! Next: Pointers and Memory Addresses.',
     },
   },
 };
@@ -653,26 +571,60 @@ export default function App() {
     }
   };
 
-  // Submit code for Gemini Review
-  const handleSubmitCode = () => {
+  // Submit code for real backend evaluation
+  const handleSubmitCode = async () => {
     setIsSubmitting(true);
     setReviewResult(null);
 
-    // Realistic review synthesized against backend Gemini rubric schema
-    setTimeout(() => {
-      setIsSubmitting(false);
-      const preset = CHALLENGE_PRESETS[selectedTrack] || CHALLENGE_PRESETS['Python'];
+    try {
+      let result: any;
+      if (activeSession && currentSessionChallenge?.challenge?.id) {
+        // Evaluate in active practice session
+        result = await api.practice.submitCode(
+          activeSession.id,
+          currentSessionChallenge.challenge.id,
+          currentCode
+        );
+        if (result.is_solved) {
+          if (result.is_session_finished) {
+            setNotification('🎉 Amazing! Session complete! All requested problems solved.');
+            setTimeout(() => setNotification(null), 5000);
+            await handleCompleteSession();
+          } else {
+            setNotification(`✓ Solution Verified! Score: ${result.score}/100. Great job!`);
+            setTimeout(() => setNotification(null), 5000);
+          }
+        } else {
+          setNotification(`⚠ Solution evaluated. Score: ${result.score}/100. Review issues below.`);
+          setTimeout(() => setNotification(null), 5000);
+        }
+      } else {
+        // Standalone challenge evaluation
+        const challengeId = currentSessionChallenge?.challenge?.id;
+        const langSlug = selectedTrack.toLowerCase();
+        result = await api.challenges.submitCode(challengeId, currentCode, langSlug);
+        setNotification(`✓ Solution evaluated. Score: ${result.score}/100.`);
+        setTimeout(() => setNotification(null), 5000);
+      }
+
       setReviewResult({
-        score: preset.sampleReview.score,
-        status: 'PASSED_RUBRIC',
-        complexity: preset.sampleReview.complexity,
-        feedback: preset.sampleReview.strength,
-        nextAdaptiveStep: preset.sampleReview.adaptiveNote,
-        timestamp: new Date().toLocaleTimeString(),
+        score: result.score,
+        status: result.status,
+        isSolved: result.is_solved,
+        summary: result.summary,
+        feedback: result.feedback,
+        complexity: result.complexity || 'O(1) execution',
+        syntaxIssues: result.syntax_issues || [],
+        logicIssues: result.logic_issues || [],
+        conceptsDemonstrated: result.concepts_demonstrated || [],
+        timestamp: result.timestamp || new Date().toLocaleTimeString(),
       });
-      setNotification(`✓ Solution evaluated against Gemini 2.5 rubric. Score: ${preset.sampleReview.score}/100.`);
-      setTimeout(() => setNotification(null), 5000);
-    }, 1200);
+    } catch (err: any) {
+      console.error('Submission error:', err);
+      alert(err.message || 'Evaluation request failed. Please check backend connection.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Hero snippet preview data
@@ -1275,7 +1227,7 @@ export default function App() {
                   />
                 </div>
 
-                {/* Live Gemini Rubric Review Panel */}
+                {/* Live Real Evaluation Rubric Review Panel */}
                 {reviewResult && (
                   <div
                     style={{
@@ -1291,48 +1243,117 @@ export default function App() {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span className="tag-badge tag-emerald">✦ GEMINI 2.5 RUBRIC VERIFIED</span>
+                        <span className={`tag-badge ${reviewResult.isSolved ? 'tag-emerald' : 'tag-amber'}`}>
+                          {reviewResult.isSolved ? '✓ SOLUTION VERIFIED (PASSED)' : '⚠ REVISION REQUIRED (NOT PASSING)'}
+                        </span>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-dim)' }}>
                           Evaluated at {reviewResult.timestamp}
                         </span>
                       </div>
-                      <button
-                        onClick={() => setReviewResult(null)}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 14 }}
-                      >
-                        ✕ Close Review
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {reviewResult.isSolved && activeSession && (
+                          <button
+                            onClick={handleNextChallenge}
+                            className="btn-primary-gradient"
+                            style={{ padding: '4px 12px', fontSize: 12, fontWeight: 700 }}
+                          >
+                            Next Problem ⏭
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setReviewResult(null)}
+                          style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 14 }}
+                        >
+                          ✕ Close Review
+                        </button>
+                      </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr 1fr', gap: 16, alignItems: 'center' }}>
-                      <div style={{ textAlign: 'center', padding: '12px', borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                        <div style={{ fontSize: 36, fontWeight: 900, fontFamily: 'var(--font-heading)', color: 'var(--accent-emerald)' }}>
+                      <div
+                        style={{
+                          textAlign: 'center',
+                          padding: '12px',
+                          borderRadius: 10,
+                          background: reviewResult.isSolved ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                          border: `1px solid ${reviewResult.isSolved ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 36,
+                            fontWeight: 900,
+                            fontFamily: 'var(--font-heading)',
+                            color: reviewResult.isSolved ? 'var(--accent-emerald)' : '#f87171',
+                          }}
+                        >
                           {reviewResult.score}
                         </div>
-                        <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-emerald)' }}>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            fontFamily: 'var(--font-mono)',
+                            color: reviewResult.isSolved ? 'var(--accent-emerald)' : '#f87171',
+                          }}
+                        >
                           RUBRIC SCORE
                         </div>
                       </div>
 
                       <div style={{ padding: '14px', borderRadius: 10, background: 'rgba(15, 23, 42, 0.7)', border: '1px solid var(--border-subtle)' }}>
                         <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', marginBottom: 4 }}>
-                          ANALYTIC COMPLEXITY
+                          EVALUATION SUMMARY
                         </div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>{reviewResult.complexity}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>{reviewResult.summary}</div>
                       </div>
 
                       <div style={{ padding: '14px', borderRadius: 10, background: 'rgba(15, 23, 42, 0.7)', border: '1px solid var(--border-subtle)' }}>
                         <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-indigo)', marginBottom: 4 }}>
-                          ADAPTIVE PROGRESSION
+                          ANALYTIC COMPLEXITY
                         </div>
-                        <div style={{ fontSize: 12, color: '#f1f5f9' }}>{reviewResult.nextAdaptiveStep}</div>
+                        <div style={{ fontSize: 12, color: '#f1f5f9' }}>{reviewResult.complexity}</div>
                       </div>
                     </div>
 
+                    {/* Syntax Errors Box if any */}
+                    {reviewResult.syntaxIssues && reviewResult.syntaxIssues.length > 0 && (
+                      <div style={{ padding: '12px 16px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', fontSize: 13, color: '#fca5a5' }}>
+                        <strong style={{ color: '#f87171', display: 'block', marginBottom: 6 }}>🚨 Syntax Error Detected:</strong>
+                        {reviewResult.syntaxIssues.map((issue: string, i: number) => (
+                          <div key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>• {issue}</div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Logic Issues / Missing Conditions Box if any */}
+                    {reviewResult.logicIssues && reviewResult.logicIssues.length > 0 && (
+                      <div style={{ padding: '12px 16px', borderRadius: 8, background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.35)', fontSize: 13, color: '#fcd34d' }}>
+                        <strong style={{ color: '#fbbf24', display: 'block', marginBottom: 6 }}>⚠ Logic Issues & Missed Conditions:</strong>
+                        {reviewResult.logicIssues.map((issue: string, i: number) => (
+                          <div key={i} style={{ fontSize: 12, marginBottom: 2 }}>• {issue}</div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Detailed Review Feedback */}
                     <div style={{ padding: '12px 16px', borderRadius: 8, background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.25)', fontSize: 13, color: '#f8fafc' }}>
                       <strong style={{ color: 'var(--accent-cyan)' }}>Surgical Review Feedback: </strong>
                       {reviewResult.feedback}
                     </div>
+
+                    {/* Concepts Demonstrated Pills */}
+                    {reviewResult.conceptsDemonstrated && reviewResult.conceptsDemonstrated.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                          Concepts Demonstrated:
+                        </span>
+                        {reviewResult.conceptsDemonstrated.map((c: string, idx: number) => (
+                          <span key={idx} className="tag-badge tag-indigo" style={{ fontSize: 10 }}>
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
