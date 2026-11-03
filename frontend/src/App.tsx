@@ -431,7 +431,7 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await api.auth.logout();
-    } catch (_) {}
+    } catch {}
     setCurrentUser(null);
     window.location.hash = '#/';
   };

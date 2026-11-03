@@ -1,4 +1,12 @@
-import type { User, AuthResponse } from '../types';
+import type {
+  User,
+  AuthResponse,
+  ProgrammingLanguage,
+  Topic,
+  PracticeSession,
+  ChallengeDetail,
+  SessionChallengeData,
+} from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
@@ -84,15 +92,15 @@ export const api = {
       }),
   },
   catalog: {
-    getLanguages: () => request<import('../types').ProgrammingLanguage[]>('/catalog/languages/'),
+    getLanguages: () => request<ProgrammingLanguage[]>('/catalog/languages/'),
     getTopics: (languageSlug: string) =>
-      request<import('../types').Topic[]>(`/catalog/languages/${languageSlug}/topics/`),
+      request<Topic[]>(`/catalog/languages/${languageSlug}/topics/`),
   },
   practice: {
     getActiveSession: () =>
-      request<{ active_session: import('../types').PracticeSession | null }>('/practice/sessions/active/'),
+      request<{ active_session: PracticeSession | null }>('/practice/sessions/active/'),
     listSessions: () =>
-      request<{ count: number; results: import('../types').PracticeSession[] } | import('../types').PracticeSession[]>('/practice/sessions/'),
+      request<{ count: number; results: PracticeSession[] } | PracticeSession[]>('/practice/sessions/'),
     createSession: (payload: {
       language_slug: string;
       topic_slug?: string | null;
@@ -101,28 +109,28 @@ export const api = {
       practice_mode: 'CODING' | 'DEBUG';
       requested_question_count: number;
     }) =>
-      request<import('../types').PracticeSession>('/practice/sessions/', {
+      request<PracticeSession>('/practice/sessions/', {
         method: 'POST',
         body: JSON.stringify(payload),
       }),
     getSession: (id: string) =>
-      request<import('../types').PracticeSession>(`/practice/sessions/${id}/`),
+      request<PracticeSession>(`/practice/sessions/${id}/`),
     abandonSession: (id: string) =>
-      request<import('../types').PracticeSession>(`/practice/sessions/${id}/abandon/`, {
+      request<PracticeSession>(`/practice/sessions/${id}/abandon/`, {
         method: 'POST',
       }),
     completeSession: (id: string) =>
-      request<import('../types').PracticeSession>(`/practice/sessions/${id}/complete/`, {
+      request<PracticeSession>(`/practice/sessions/${id}/complete/`, {
         method: 'POST',
       }),
     getCurrentChallenge: (sessionId: string) =>
-      request<import('../types').SessionChallengeData>(`/practice/sessions/${sessionId}/current-challenge/`),
+      request<SessionChallengeData>(`/practice/sessions/${sessionId}/current-challenge/`),
     getNextChallenge: (sessionId: string) =>
-      request<import('../types').SessionChallengeData>(`/practice/sessions/${sessionId}/next-challenge/`, {
+      request<SessionChallengeData>(`/practice/sessions/${sessionId}/next-challenge/`, {
         method: 'POST',
       }),
     skipChallenge: (sessionId: string) =>
-      request<import('../types').SessionChallengeData>(`/practice/sessions/${sessionId}/skip-challenge/`, {
+      request<SessionChallengeData>(`/practice/sessions/${sessionId}/skip-challenge/`, {
         method: 'POST',
       }),
     submitCode: (sessionId: string, challengeId: string, sourceCode: string) =>
@@ -223,7 +231,7 @@ export const api = {
   },
   challenges: {
     getChallenge: (id: string) =>
-      request<import('../types').ChallengeDetail>(`/challenges/${id}/`),
+      request<ChallengeDetail>(`/challenges/${id}/`),
     submitCode: (challengeId?: string, sourceCode: string = '', languageSlug?: string) =>
       request<{
         submission_id: string;

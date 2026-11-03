@@ -669,7 +669,7 @@ class AnalyticsTelemetryView(APIView):
                 'heatmap_meta': heatmap_meta,
                 'evidence_log': evidence_log
             })
-        except Exception as err:
+        except Exception:
             return Response({
                 'kpis': {
                     'global_rubric_score': 95.0,
