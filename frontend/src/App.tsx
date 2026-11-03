@@ -68,10 +68,9 @@ export default function App() {
   const [showBenchmarkOverlay, setShowBenchmarkOverlay] = useState<boolean>(true);
   const [expandedTopicSlug, setExpandedTopicSlug] = useState<string | null>(null);
 
-  // 2-Way "What-If" Bayesian Calibration Simulator State
-  const [simulatedHypotheticalScore, setSimulatedHypotheticalScore] = useState<number>(98);
-  const [isSimulationActive, setIsSimulationActive] = useState<boolean>(false);
-  const [targetGoalMastery, setTargetGoalMastery] = useState<number>(96);
+  // GitHub-Style Activity Heatmap & Rhythm State
+  const [hoveredHeatmapDay, setHoveredHeatmapDay] = useState<any | null>(null);
+  const [selectedHeatmapDate, setSelectedHeatmapDate] = useState<string | null>(null);
 
   const loadAnalytics = (track?: string) => {
     setAnalyticsLoading(true);
@@ -1996,9 +1995,7 @@ export default function App() {
                 {/* 1. PRECISION KPI TILES WITH CIRCULAR RADIAL SVG GAUGES                    */}
                 {/* ========================================================================= */}
                 {(() => {
-                  const baseScore = analyticsData?.kpis?.global_rubric_score ?? 95.0;
-                  const simDelta = isSimulationActive ? Math.round((0.4 * (simulatedHypotheticalScore - baseScore)) * 10) / 10 : 0;
-                  const displayScore = isSimulationActive ? Math.min(100, Math.max(0, Math.round((baseScore + simDelta) * 10) / 10)) : baseScore;
+                  const displayScore = analyticsData?.kpis?.global_rubric_score ?? 95.0;
                   const circleCircumference = 2 * Math.PI * 34; // r=34 -> ~213.6
                   const strokeOffset = circleCircumference - (circleCircumference * displayScore) / 100;
 
@@ -2011,9 +2008,9 @@ export default function App() {
                           padding: '18px 20px',
                           position: 'relative',
                           overflow: 'hidden',
-                          background: isSimulationActive ? 'rgba(99, 102, 241, 0.12)' : 'rgba(15, 23, 42, 0.8)',
-                          border: isSimulationActive ? '1px solid #6366f1' : '1px solid rgba(78, 222, 163, 0.3)',
-                          boxShadow: isSimulationActive ? '0 0 25px rgba(99, 102, 241, 0.25)' : '0 0 20px -4px rgba(78, 222, 163, 0.12)',
+                          background: 'rgba(15, 23, 42, 0.8)',
+                          border: '1px solid rgba(78, 222, 163, 0.3)',
+                          boxShadow: '0 0 20px -4px rgba(78, 222, 163, 0.12)',
                           transition: 'all 0.3s ease',
                         }}
                       >
@@ -2021,26 +2018,15 @@ export default function App() {
                           <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             Global Rubric Score
                           </span>
-                          {isSimulationActive ? (
-                            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#a5b4fc', background: 'rgba(99, 102, 241, 0.25)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
-                              SIMULATED
-                            </span>
-                          ) : (
-                            <span style={{ color: 'var(--accent-emerald)', fontSize: 12 }}>✦</span>
-                          )}
+                          <span style={{ color: 'var(--accent-emerald)', fontSize: 12 }}>✦</span>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                           <div>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                              <span style={{ fontSize: 34, fontWeight: 900, color: isSimulationActive ? '#c0c1ff' : '#ffffff', letterSpacing: '-0.02em' }}>
+                              <span style={{ fontSize: 34, fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em' }}>
                                 {displayScore}%
                               </span>
-                              {isSimulationActive && (
-                                <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: simDelta >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)', fontWeight: 700 }}>
-                                  {simDelta >= 0 ? `+${simDelta}%` : `${simDelta}%`}
-                                </span>
-                              )}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12, color: 'var(--accent-emerald)', fontWeight: 600 }}>
                               <span>▲</span> {analyticsData?.kpis?.trend_percentage ?? '+4.8%'} trend
@@ -2066,7 +2052,7 @@ export default function App() {
                                 cy="39"
                                 r="34"
                                 fill="transparent"
-                                stroke={isSimulationActive ? '#6366f1' : 'var(--accent-emerald)'}
+                                stroke="var(--accent-emerald)"
                                 strokeWidth="6"
                                 strokeDasharray={circleCircumference}
                                 strokeDashoffset={strokeOffset}
@@ -2800,171 +2786,207 @@ export default function App() {
                     })()}
                   </div>
 
-                  {/* PANEL B: 2-WAY INTERACTIVE BAYESIAN CALIBRATION SIMULATOR */}
+                  {/* PANEL B: GITHUB-STYLE PRACTICE RHYTHM & CONTRIBUTION HEATMAP */}
                   <div
                     className="forge-card"
                     style={{
                       padding: 24,
-                      background: 'radial-gradient(circle at 100% 0%, rgba(99, 102, 241, 0.18), rgba(15, 23, 42, 0.95) 75%)',
-                      border: '1px solid rgba(99, 102, 241, 0.4)',
-                      boxShadow: '0 0 30px -4px rgba(99, 102, 241, 0.2)',
+                      background: 'rgba(15, 23, 42, 0.85)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
+                      position: 'relative',
                     }}
                   >
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      {/* Heatmap Header */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 18 }}>🟩</span>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                              Practice Rhythm & Contribution Heatmap
+                            </h3>
+                          </div>
+                          <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4, margin: 0 }}>
+                            Daily submission density over the last 20 weeks. Hover over any box to inspect day telemetry.
+                          </p>
+                        </div>
+
+                        {/* Cadence Badges */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 20 }}>🧪</span>
-                          <h3 style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                            2-Way Bayesian Calibration Lab
-                          </h3>
-                        </div>
-                        <span className="tag-badge tag-indigo" style={{ fontSize: 9 }}>WHAT-IF SIMULATOR</span>
-                      </div>
-
-                      <p style={{ color: '#cbd5e1', fontSize: 12.5, lineHeight: 1.6, marginBottom: 16 }}>
-                        Interactive calibration modeling. Test hypothetical scenario scores to see how live Bayesian moving averages, confidence scaling, and weak vectors respond before solving.
-                      </p>
-
-                      {/* Interactive Submission Quality Presets */}
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', marginBottom: 8, textTransform: 'uppercase' }}>
-                          Simulate Submission Outcome:
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                          {[
-                            { label: '🌟 Flawless (100%)', score: 100 },
-                            { label: '✓ Sound (90%)', score: 90 },
-                            { label: '⚠️ Edge Miss (70%)', score: 70 },
-                            { label: '❌ Invariant Fail (45%)', score: 45 },
-                          ].map((preset) => (
-                            <button
-                              key={preset.score}
-                              type="button"
-                              onClick={() => {
-                                setSimulatedHypotheticalScore(preset.score);
-                                setIsSimulationActive(true);
-                              }}
-                              style={{
-                                padding: '8px 10px',
-                                borderRadius: 6,
-                                border: simulatedHypotheticalScore === preset.score && isSimulationActive
-                                  ? '1px solid #6366f1'
-                                  : '1px solid rgba(255, 255, 255, 0.08)',
-                                background: simulatedHypotheticalScore === preset.score && isSimulationActive
-                                  ? 'rgba(99, 102, 241, 0.25)'
-                                  : 'rgba(255, 255, 255, 0.03)',
-                                color: simulatedHypotheticalScore === preset.score && isSimulationActive ? '#ffffff' : 'var(--text-muted)',
-                                fontSize: 11.5,
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                textAlign: 'left',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              {preset.label}
-                            </button>
-                          ))}
+                          <span className="tag-badge tag-emerald" style={{ fontSize: 10 }}>
+                            🔥 {analyticsData?.heatmap_meta?.current_streak ?? 7} Day Streak
+                          </span>
+                          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                            {analyticsData?.heatmap_meta?.total_submissions ?? 124} Submissions
+                          </span>
                         </div>
                       </div>
 
-                      {/* Manual Slider Control */}
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--font-mono)', marginBottom: 6 }}>
-                          <span style={{ color: 'var(--text-dim)' }}>Fine-tune Simulated Score:</span>
-                          <span style={{ color: '#c0c1ff', fontWeight: 700 }}>{simulatedHypotheticalScore}%</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="40"
-                          max="100"
-                          value={simulatedHypotheticalScore}
-                          onChange={(e) => {
-                            setSimulatedHypotheticalScore(Number(e.target.value));
-                            setIsSimulationActive(true);
-                          }}
-                          style={{
-                            width: '100%',
-                            accentColor: '#6366f1',
-                            cursor: 'pointer',
-                          }}
-                        />
-                      </div>
-
-                      {/* Live Calculation Feedback Card */}
+                      {/* Heatmap Grid Rendering */}
                       {(() => {
-                        const curScore = analyticsData?.kpis?.global_rubric_score ?? 95.0;
-                        const delta = Math.round((0.4 * (simulatedHypotheticalScore - curScore)) * 10) / 10;
-                        const projected = Math.min(100, Math.max(0, Math.round((curScore + delta) * 10) / 10));
+                        const days = analyticsData?.activity_heatmap || [];
+                        // Group days into columns of 7 days (Monday=0 to Sunday=6)
+                        const weeks: any[][] = [];
+                        for (let i = 0; i < days.length; i += 7) {
+                          weeks.push(days.slice(i, i + 7));
+                        }
+
+                        // Color mapping based on submission intensity level (0 to 4)
+                        const getLevelStyle = (level: number) => {
+                          switch (level) {
+                            case 1:
+                              return { background: 'rgba(16, 185, 129, 0.30)', border: '1px solid rgba(16, 185, 129, 0.40)' };
+                            case 2:
+                              return { background: 'rgba(16, 185, 129, 0.55)', border: '1px solid rgba(16, 185, 129, 0.65)' };
+                            case 3:
+                              return { background: 'rgba(16, 185, 129, 0.85)', border: '1px solid #10b981' };
+                            case 4:
+                              return { background: '#10b981', border: '1px solid #34d399', boxShadow: '0 0 10px rgba(16, 185, 129, 0.7)' };
+                            default:
+                              return { background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.05)' };
+                          }
+                        };
 
                         return (
-                          <div style={{ padding: '14px 16px', borderRadius: 8, background: 'rgba(6, 14, 32, 0.8)', border: '1px solid rgba(99, 102, 241, 0.3)', marginBottom: 16 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                              <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>PROJECTED BAYESIAN CONVERGENCE</span>
-                              <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: delta >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)', fontWeight: 700 }}>
-                                {delta >= 0 ? `▲ +${delta}%` : `▼ ${delta}%`}
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                              <span style={{ fontSize: 24, fontWeight: 900, color: '#ffffff' }}>
-                                {projected}%
-                              </span>
-                              <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                                from baseline {curScore}%
-                              </span>
-                            </div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                              Formula: <em>Score' = 0.4 × {simulatedHypotheticalScore} + 0.6 × {curScore}</em>
+                          <div style={{ marginTop: 14, overflowX: 'auto', paddingBottom: 6 }}>
+                            <div style={{ display: 'inline-flex', gap: 10 }}>
+                              {/* Day of Week Labels (Mon, Wed, Fri, Sun) */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingTop: 18, fontSize: 9.5, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', textAlign: 'right', width: 24, flexShrink: 0 }}>
+                                <div style={{ height: 13, lineHeight: '13px' }}>Mon</div>
+                                <div style={{ height: 13, lineHeight: '13px' }}></div>
+                                <div style={{ height: 13, lineHeight: '13px' }}>Wed</div>
+                                <div style={{ height: 13, lineHeight: '13px' }}></div>
+                                <div style={{ height: 13, lineHeight: '13px' }}>Fri</div>
+                                <div style={{ height: 13, lineHeight: '13px' }}></div>
+                                <div style={{ height: 13, lineHeight: '13px' }}>Sun</div>
+                              </div>
+
+                              {/* 20 Columns of Weeks */}
+                              <div style={{ display: 'flex', gap: 3.5 }}>
+                                {weeks.map((week, wIdx) => {
+                                  // Show month label above first week of that month
+                                  const firstDay = week[0];
+                                  let monthLabel = '';
+                                  if (firstDay && (wIdx === 0 || new Date(firstDay.date).getDate() <= 7)) {
+                                    monthLabel = new Date(firstDay.date).toLocaleDateString('en-US', { month: 'short' });
+                                  }
+
+                                  return (
+                                    <div key={wIdx} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                      {/* Month header tick */}
+                                      <div style={{ height: 15, fontSize: 9.5, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                                        {monthLabel}
+                                      </div>
+
+                                      {/* 7 Days in Week */}
+                                      {week.map((d: any, dIdx: number) => {
+                                        const isHovered = hoveredHeatmapDay?.date === d.date;
+                                        const isSelected = selectedHeatmapDate === d.date;
+                                        const style = getLevelStyle(d.level);
+
+                                        return (
+                                          <div
+                                            key={dIdx}
+                                            onMouseEnter={() => setHoveredHeatmapDay(d)}
+                                            onMouseLeave={() => {
+                                              if (!selectedHeatmapDate) {
+                                                setHoveredHeatmapDay(null);
+                                              }
+                                            }}
+                                            onClick={() => {
+                                              const newSelected = isSelected ? null : d.date;
+                                              setSelectedHeatmapDate(newSelected);
+                                              setHoveredHeatmapDay(d);
+                                              if (d.count > 0 && d.topics && d.topics.length > 0) {
+                                                setEvidenceFilter(d.topics[0]);
+                                              }
+                                            }}
+                                            style={{
+                                              width: 13,
+                                              height: 13,
+                                              borderRadius: 2.5,
+                                              cursor: 'pointer',
+                                              transition: 'all 0.15s ease',
+                                              transform: isHovered || isSelected ? 'scale(1.35)' : 'scale(1)',
+                                              zIndex: isHovered || isSelected ? 10 : 1,
+                                              ...style,
+                                              ...(isHovered ? { border: '1.5px solid #ffffff', boxShadow: '0 0 10px rgba(255, 255, 255, 0.8)' } : {}),
+                                              ...(isSelected ? { border: '1.5px solid #6366f1', boxShadow: '0 0 10px rgba(99, 102, 241, 0.9)' } : {}),
+                                            }}
+                                            title={`${d.count} submissions on ${d.display_date}`}
+                                          />
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
                           </div>
                         );
                       })()}
-
-                      {/* Target Mastery Goal Forecaster */}
-                      <div style={{ padding: '12px 14px', borderRadius: 8, background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--font-mono)', marginBottom: 4 }}>
-                          <span style={{ color: 'var(--accent-cyan)' }}>TARGET MASTERY FORECASTER:</span>
-                          <span style={{ color: '#ffffff', fontWeight: 700 }}>{targetGoalMastery}%</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="85"
-                          max="99"
-                          value={targetGoalMastery}
-                          onChange={(e) => setTargetGoalMastery(Number(e.target.value))}
-                          style={{ width: '100%', accentColor: 'var(--accent-cyan)', cursor: 'pointer', marginBottom: 8 }}
-                        />
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                          To reach <strong>{targetGoalMastery}%</strong>: Complete ~2 consecutive ≥95% scenarios in <strong>Defensive Edge-Cases</strong>.
-                        </div>
-                      </div>
                     </div>
 
-                    {/* Reset Button */}
-                    {isSimulationActive && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsSimulationActive(false);
-                          setSimulatedHypotheticalScore(98);
-                        }}
-                        style={{
-                          marginTop: 14,
-                          padding: '8px',
-                          borderRadius: 6,
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          background: 'rgba(255, 255, 255, 0.04)',
-                          color: 'var(--text-dim)',
-                          fontSize: 11,
-                          fontFamily: 'var(--font-mono)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        ✕ Exit Simulation & Restore Live Telemetry
-                      </button>
-                    )}
+                    {/* Interactive Tooltip HUD */}
+                    <div style={{ marginTop: 14, minHeight: 48, padding: '10px 14px', borderRadius: 8, background: 'rgba(6, 14, 32, 0.8)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                      {(() => {
+                        const days = analyticsData?.activity_heatmap || [];
+                        const activeDay = hoveredHeatmapDay || (selectedHeatmapDate ? days.find((d: any) => d.date === selectedHeatmapDate) : null);
+                        if (activeDay) {
+                          return (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                              <div>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: '#ffffff' }}>
+                                  {activeDay.display_date}
+                                </div>
+                                <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', marginTop: 2 }}>
+                                  {activeDay.count > 0
+                                    ? `${activeDay.count} Submissions • Topics: ${(activeDay.topics || []).join(', ') || 'Foundations'}`
+                                    : 'No submissions recorded on this date.'}
+                                </div>
+                              </div>
+                              {activeDay.count > 0 && (
+                                <span className="tag-badge tag-emerald" style={{ fontSize: 10 }}>
+                                  Avg Rubric: {activeDay.avg_score}%
+                                </span>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                            <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                              ✦ Hover or click any box to inspect date, submission density, and topics practiced
+                            </span>
+                            <span style={{ fontSize: 11, color: 'var(--accent-cyan)' }}>
+                              {analyticsData?.heatmap_meta?.active_days ?? 38} active practice days
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Bottom Legend: Less to More */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 10, borderTop: '1px solid rgba(255, 255, 255, 0.05)', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>Intensity:</span>
+                        <span style={{ color: 'var(--text-dim)' }}>0 (None) → 7+ (Peak)</span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <span style={{ fontSize: 10 }}>Less</span>
+                        <span style={{ width: 11, height: 11, borderRadius: 2, background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.05)' }}></span>
+                        <span style={{ width: 11, height: 11, borderRadius: 2, background: 'rgba(16, 185, 129, 0.30)', border: '1px solid rgba(16, 185, 129, 0.40)' }}></span>
+                        <span style={{ width: 11, height: 11, borderRadius: 2, background: 'rgba(16, 185, 129, 0.55)', border: '1px solid rgba(16, 185, 129, 0.65)' }}></span>
+                        <span style={{ width: 11, height: 11, borderRadius: 2, background: 'rgba(16, 185, 129, 0.85)', border: '1px solid #10b981' }}></span>
+                        <span style={{ width: 11, height: 11, borderRadius: 2, background: '#10b981', border: '1px solid #34d399', boxShadow: '0 0 6px rgba(16, 185, 129, 0.8)' }}></span>
+                        <span style={{ fontSize: 10 }}>More</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
