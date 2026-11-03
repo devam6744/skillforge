@@ -143,8 +143,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ challenge_id: challengeId, source_code: sourceCode }),
       }),
-    getAnalytics: (track?: string) =>
-      request<{
+    getAnalytics: (track?: string, year?: number | string) => {
+      const params = new URLSearchParams();
+      if (track) params.append('track', track);
+      if (year) params.append('year', String(year));
+      const queryString = params.toString() ? `?${params.toString()}` : '';
+      return request<{
         kpis: {
           global_rubric_score: number;
           trend_percentage: string;
@@ -182,6 +186,28 @@ export const api = {
           target_topic_slug: string;
           remediation_cta: string;
         };
+        activity_heatmap: Array<{
+          date: string;
+          display_date: string;
+          day_of_week: number;
+          count: number;
+          level: number;
+          avg_score: number;
+          topics: string[];
+          is_future?: boolean;
+        }>;
+        heatmap_meta: {
+          total_submissions: number;
+          active_days: number;
+          current_streak: number;
+          peak_streak: number;
+          completion_rate: number;
+          weeks_count: number;
+          selected_year: number;
+          available_years: number[];
+          start_date: string;
+          end_date: string;
+        };
         evidence_log: Array<{
           timestamp: string;
           scenario_name: string;
@@ -192,7 +218,8 @@ export const api = {
           summary: string;
           is_solved: boolean;
         }>;
-      }>(`/practice/analytics/${track ? `?track=${track}` : ''}`),
+      }>(`/practice/analytics/${queryString}`);
+    },
   },
   challenges: {
     getChallenge: (id: string) =>
