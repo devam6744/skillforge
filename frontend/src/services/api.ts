@@ -143,6 +143,56 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ challenge_id: challengeId, source_code: sourceCode }),
       }),
+    getAnalytics: (track?: string) =>
+      request<{
+        kpis: {
+          global_rubric_score: number;
+          trend_percentage: string;
+          confidence_rating: string;
+          total_scenarios_solved: number;
+          batches_count: number;
+          optimal_count: number;
+          sound_count: number;
+          review_count: number;
+          logic_accuracy_percentage: number;
+          streak_days: number;
+          peak_streak_days: number;
+        };
+        calibration_matrix: Array<{
+          topic_id: string;
+          topic_slug: string;
+          name: string;
+          score: number;
+          confidence: number;
+          status: string;
+          solved_count: number;
+          tags: string[];
+          last_practiced: string;
+          is_primary_vector: boolean;
+        }>;
+        diagnostic_insight: {
+          title: string;
+          analysis: string;
+          radar_metrics: {
+            invariant_soundness: number;
+            memory_hygiene: number;
+            boundary_corner_trapping: number;
+          };
+          target_topic_name: string;
+          target_topic_slug: string;
+          remediation_cta: string;
+        };
+        evidence_log: Array<{
+          timestamp: string;
+          scenario_name: string;
+          track_topic: string;
+          score: string;
+          complexity: string;
+          proofs: string[];
+          summary: string;
+          is_solved: boolean;
+        }>;
+      }>(`/practice/analytics/${track ? `?track=${track}` : ''}`),
   },
   challenges: {
     getChallenge: (id: string) =>

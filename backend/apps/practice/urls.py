@@ -9,11 +9,13 @@ from apps.practice.views import (
     SessionNextChallengeView,
     SessionSkipChallengeView,
     SessionSubmitView,
+    AnalyticsTelemetryView,
 )
 
 app_name = 'practice'
 
 urlpatterns = [
+    path('analytics/', AnalyticsTelemetryView.as_view(), name='analytics-telemetry'),
     path('sessions/', SessionListCreateView.as_view(), name='session-list-create'),
     path('sessions/active/', ActiveSessionView.as_view(), name='session-active'),
     path('sessions/<uuid:id>/', SessionDetailView.as_view(), name='session-detail'),

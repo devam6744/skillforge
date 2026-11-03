@@ -197,17 +197,11 @@ Return ONLY a valid JSON object matching this schema:
                 completed_at=timezone.now()
             )
 
-            # Update SkillState
-            SkillState.objects.update_or_create(
-                user=submission.user,
-                language=submission.language,
-                topic=submission.challenge.primary_topic,
-                defaults={
-                    'estimated_skill': max(score, 70),
-                    'confidence': 88.0,
-                    'evidence_count': 1,
-                    'last_practiced_at': timezone.now(),
-                }
-            )
+        # Record Evidence & Calibrate Skill State
+        try:
+            from apps.skills.services.updater import SkillTrackingService
+            SkillTrackingService.record_evidence(submission, eval_obj)
+        except Exception as e:
+            logger.warning(f"Skill evidence tracking skipped: {e}")
 
         return eval_obj
