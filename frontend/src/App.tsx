@@ -2,199 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { api } from './services/api';
 import type { User, ProgrammingLanguage, PracticeSession, SessionChallengeData } from './types';
 
-// Foundation-first practice presets for language fundamentals
-const CHALLENGE_PRESETS: Record<
-  string,
-  {
-    title: string;
-    topic: string;
-    difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'ADAPTIVE';
-    description: string;
-    constraints: string[];
-    starterCode: string;
-    hints: string[];
-    sampleReview: {
-      score: number;
-      complexity: string;
-      strength: string;
-      adaptiveNote: string;
-    };
-  }
-> = {
-  Python: {
-    title: 'Voter Age & Eligibility Verification System',
-    topic: 'Variables, Types & Flow Control',
-    difficulty: 'EASY',
-    description:
-      'You are building a citizen verification module for a digital voter registration portal.\n\n' +
-      'Write a function `check_voter_eligibility(age: int) -> str` that verifies eligibility based on these rules:\n' +
-      '1. If `age < 0`, return `"Invalid age: cannot be negative"`.\n' +
-      '2. If `age >= 18`, return `"Eligible to Vote"`.\n' +
-      '3. If `age < 18` (and >= 0), return `"Not eligible: must be at least 18 years old"`.\n\n' +
-      'Example:\n' +
-      'check_voter_eligibility(20) -> "Eligible to Vote"\n' +
-      'check_voter_eligibility(16) -> "Not eligible: must be at least 18 years old"\n' +
-      'check_voter_eligibility(-5) -> "Invalid age: cannot be negative"',
-    constraints: [
-      'Input age is guaranteed to be an integer',
-      'Return the exact output strings matching the specification',
-      'Handle negative age values before checking the voting threshold',
-    ],
-    starterCode: `def check_voter_eligibility(age: int) -> str:
-    """
-    Returns voter eligibility status string based on the given age.
-    """
-    # TODO: Write your condition logic here
-    pass
-`,
-    hints: [
-      'Check for negative values first: `if age < 0:`.',
-      'Use `elif age >= 18:` to identify eligible voters.',
-    ],
-    sampleReview: {
-      score: 95,
-      complexity: 'O(1) time • O(1) space',
-      strength: 'Clean conditional branching properly checking boundary and negative conditions.',
-      adaptiveNote: 'Foundational conditionals verified! Next: progressive tiered slab calculators.',
-    },
-  },
-  JavaScript: {
-    title: 'Cinema Movie Ticket Pricing Calculator',
-    topic: 'Variables, Primitives & Operators',
-    difficulty: 'EASY',
-    description:
-      'Write a function `calculateTicketPrice(age, isStudent)` for a cinema ticketing kiosk:\n\n' +
-      '1. If `age < 0` or typeof age !== "number", return `-1` (Invalid age).\n' +
-      '2. Under 5 years old: Free (`0.0`).\n' +
-      '3. Senior citizens (65 and older): `$10.0`.\n' +
-      '4. Students (`isStudent === true` and age between 5 and 64): `$12.0`.\n' +
-      '5. General adult admission (all other cases): `$16.0`.\n\n' +
-      'Example:\n' +
-      'calculateTicketPrice(22, true) -> 12\n' +
-      'calculateTicketPrice(70, false) -> 10\n' +
-      'calculateTicketPrice(-3, false) -> -1',
-    constraints: [
-      'Return a numeric price value',
-      'Use strict equality (===) for boolean checking',
-    ],
-    starterCode: `export function calculateTicketPrice(age, isStudent) {
-  // TODO: Write your ticket pricing logic here
-}
-`,
-    hints: [
-      'Check for negative age or invalid type first.',
-      'Order conditions: Under 5, then Senior (>= 65), then Student, then default.',
-    ],
-    sampleReview: {
-      score: 96,
-      complexity: 'O(1) time • O(1) space',
-      strength: 'Solid strict-equality checking and progressive tier checks.',
-      adaptiveNote: 'Primitives & operators verified. Advancing to Array processing.',
-    },
-  },
-  'C++': {
-    title: 'Traffic Light Signal Command System',
-    topic: 'Syntax, Variables & Control Flow',
-    difficulty: 'EASY',
-    description:
-      'Write a C++ function `std::string getTrafficSignalAction(char lightCode)` for an autonomous vehicle navigation module:\n\n' +
-      '1. If `lightCode` is \'R\' or \'r\', return `"STOP"`.\n' +
-      '2. If `lightCode` is \'Y\' or \'y\', return `"PREPARE_TO_STOP"`.\n' +
-      '3. If `lightCode` is \'G\' or \'g\', return `"GO"`.\n' +
-      '4. For any other character, return `"INVALID_SIGNAL"`.\n\n' +
-      'Example:\n' +
-      'getTrafficSignalAction(\'R\') -> "STOP"\n' +
-      'getTrafficSignalAction(\'g\') -> "GO"\n' +
-      'getTrafficSignalAction(\'X\') -> "INVALID_SIGNAL"',
-    constraints: [
-      'Handle both uppercase and lowercase lightCode characters',
-      'Return standard std::string',
-    ],
-    starterCode: `#include <string>
-
-std::string getTrafficSignalAction(char lightCode) {
-    // TODO: Return navigation action based on signal light
-    return "";
-}
-`,
-    hints: [
-      'Use a switch statement or if/else if with single quotes for characters (\'R\', \'r\').',
-    ],
-    sampleReview: {
-      score: 95,
-      complexity: 'O(1) Execution • Zero Heap Overhead',
-      strength: 'Efficient character switch handling both upper and lower case inputs.',
-      adaptiveNote: 'C++ basic syntax verified! Next: References and Pass-by-reference.',
-    },
-  },
-  Java: {
-    title: 'Voter Registration Age Verification',
-    topic: 'Syntax, Primitives & Branching',
-    difficulty: 'EASY',
-    description:
-      'In `VoterEligibility.java`, implement `public static String checkEligibility(int age)`:\n\n' +
-      '1. If `age < 0`: return `"Invalid Age"`.\n' +
-      '2. If `age >= 18`: return `"Eligible to Vote"`.\n' +
-      '3. If `age < 18`: return `"Not Eligible to Vote"`.\n\n' +
-      'Example:\n' +
-      'checkEligibility(21) -> "Eligible to Vote"\n' +
-      'checkEligibility(15) -> "Not Eligible to Vote"\n' +
-      'checkEligibility(-2) -> "Invalid Age"',
-    constraints: [
-      'Return the exact strings specified in the requirements',
-      'Static method with primitive int parameter',
-    ],
-    starterCode: `public class VoterEligibility {
-    public static String checkEligibility(int age) {
-        // TODO: Implement eligibility logic
-        return "";
-    }
-}
-`,
-    hints: [
-      'Check `if (age < 0)` first, followed by `else if (age >= 18)`.',
-    ],
-    sampleReview: {
-      score: 98,
-      complexity: 'O(1) Memory & Time',
-      strength: 'Clean Java static method with proper conditional branches.',
-      adaptiveNote: 'Java syntax verified! Next: Object Encapsulation and Getters/Setters.',
-    },
-  },
-  C: {
-    title: 'Voter Age Eligibility Checker',
-    topic: 'Data Types, Operators & Flow Control',
-    difficulty: 'EASY',
-    description:
-      'Write a C function `int check_voter_eligibility(int age)`:\n\n' +
-      '1. If `age < 0`, return `-1` (Invalid input).\n' +
-      '2. If `age >= 18`, return `1` (Eligible to vote).\n' +
-      '3. If `age < 18` (and >= 0), return `0` (Not eligible to vote).\n\n' +
-      'Example:\n' +
-      'check_voter_eligibility(19) -> 1\n' +
-      'check_voter_eligibility(14) -> 0\n' +
-      'check_voter_eligibility(-1) -> -1',
-    constraints: [
-      'Return integer codes: 1 for eligible, 0 for not eligible, -1 for invalid',
-      'Use standard C integer conditionals',
-    ],
-    starterCode: `int check_voter_eligibility(int age) {
-    // TODO: Return 1 if eligible, 0 if not eligible, -1 if negative
-    return 0;
-}
-`,
-    hints: [
-      'Check `age < 0` first and return -1.',
-      'Check `age >= 18` and return 1, else return 0.',
-    ],
-    sampleReview: {
-      score: 97,
-      complexity: 'O(1) Inlined Instruction',
-      strength: 'Standard C branch logic with clear return status codes.',
-      adaptiveNote: 'C control flow verified! Next: Pointers and Memory Addresses.',
-    },
-  },
-};
 
 export default function App() {
   // Global auth state
@@ -222,7 +29,7 @@ export default function App() {
   const [selectedCount, setSelectedCount] = useState<5 | 10 | 20>(5);
 
   // Practice Arena state
-  const [currentCode, setCurrentCode] = useState<string>(CHALLENGE_PRESETS['Python'].starterCode);
+  const [currentCode, setCurrentCode] = useState<string>('');
   const [showHints, setShowHints] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reviewResult, setReviewResult] = useState<any | null>(null);
@@ -479,10 +286,10 @@ export default function App() {
     }
   };
 
-  // Sync starter code when track changes and no active session
+  // Reset arena state when track changes and no active session
   useEffect(() => {
-    if (!activeSession && CHALLENGE_PRESETS[selectedTrack]) {
-      setCurrentCode(CHALLENGE_PRESETS[selectedTrack].starterCode);
+    if (!activeSession) {
+      setCurrentCode('');
       setReviewResult(null);
       setShowHints(false);
     }
@@ -750,7 +557,6 @@ export default function App() {
   };
 
   const currentSnippet = snippetData[heroSnippetTab];
-  const activePreset = CHALLENGE_PRESETS[selectedTrack] || CHALLENGE_PRESETS['Python'];
 
   if (initialLoading) {
     return (
@@ -959,84 +765,79 @@ export default function App() {
                 }}
               >
                 {/* Left: Breadcrumbs & Status */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>{selectedTrack}</span>
-                    <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>/</span>
-                    <span style={{ color: '#c0c1ff' }}>
-                      {currentSessionChallenge?.challenge.topic_name || activeSession?.topic_name || activePreset.topic}
+                {activeSession ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>{selectedTrack}</span>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>/</span>
+                      <span style={{ color: '#c0c1ff' }}>
+                        {currentSessionChallenge?.challenge.topic_name || activeSession.topic_name || 'Mixed Track'}
+                      </span>
+                    </div>
+
+                    <span className="tag-badge tag-emerald" style={{ fontSize: 10, padding: '2px 8px' }}>
+                      {currentSessionChallenge?.challenge.difficulty || activeSession.difficulty_mode}
                     </span>
-                  </div>
 
-                  <span className="tag-badge tag-emerald" style={{ fontSize: 10, padding: '2px 8px' }}>
-                    {currentSessionChallenge?.challenge.difficulty || activeSession?.difficulty_mode || activePreset.difficulty}
-                  </span>
-
-                  {activeSession && (
                     <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', background: 'rgba(255, 255, 255, 0.04)', padding: '2px 8px', borderRadius: 4 }}>
                       Problem {currentSessionChallenge ? currentSessionChallenge.question_order : 1} of {currentSessionChallenge ? currentSessionChallenge.total_questions : activeSession.requested_question_count}
                     </span>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span className="tag-badge tag-indigo" style={{ fontSize: 10, padding: '3px 8px' }}>
+                      {selectedTrack.toUpperCase()} TRACK
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>
+                      Practice Studio
+                    </span>
+                    <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>/</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#c0c1ff' }}>
+                      Free Practice Studio
+                    </span>
+                  </div>
+                )}
 
                 {/* Right: Actions, Timer & Controls */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   {activeSession ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderRight: '1px solid rgba(255, 255, 255, 0.08)', paddingRight: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                        <span className="pulsing-emerald-dot" style={{ width: 6, height: 6 }}></span>
-                        <span>{formatTimer(sessionTimer)} elapsed</span>
-                      </div>
-                      <button
-                        onClick={handleAbandonSession}
-                        style={{
-                          background: 'transparent',
-                          border: '1px solid rgba(244, 63, 94, 0.3)',
-                          color: 'var(--accent-rose)',
-                          padding: '3px 8px',
-                          borderRadius: 5,
-                          fontSize: 11,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Abandon
-                      </button>
-                      <button
-                        onClick={handleCompleteSession}
-                        style={{
-                          background: 'rgba(16, 185, 129, 0.15)',
-                          border: '1px solid rgba(16, 185, 129, 0.3)',
-                          color: 'var(--accent-emerald)',
-                          padding: '3px 10px',
-                          borderRadius: 5,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Finish Session
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setWorkspaceTab('launchpad')}
-                      style={{
-                        background: 'rgba(99, 102, 241, 0.12)',
-                        border: '1px solid rgba(99, 102, 241, 0.3)',
-                        color: '#c0c1ff',
-                        padding: '4px 12px',
-                        borderRadius: 6,
-                        fontSize: 11,
-                        fontFamily: 'var(--font-mono)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      + Start Topic Session
-                    </button>
-                  )}
-
-                  {activeSession && (
                     <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderRight: '1px solid rgba(255, 255, 255, 0.08)', paddingRight: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                          <span className="pulsing-emerald-dot" style={{ width: 6, height: 6 }}></span>
+                          <span>{formatTimer(sessionTimer)} elapsed</span>
+                        </div>
+                        <button
+                          onClick={handleAbandonSession}
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid rgba(244, 63, 94, 0.3)',
+                            color: 'var(--accent-rose)',
+                            padding: '3px 8px',
+                            borderRadius: 5,
+                            fontSize: 11,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Abandon
+                        </button>
+                        <button
+                          onClick={handleCompleteSession}
+                          style={{
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            color: 'var(--accent-emerald)',
+                            padding: '3px 10px',
+                            borderRadius: 5,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Finish Session
+                        </button>
+                      </div>
+
                       <button
                         onClick={handleSkipChallenge}
                         disabled={isLoadingChallenge}
@@ -1077,43 +878,48 @@ export default function App() {
                         <span>⏭</span>
                         {isLoadingChallenge ? 'Loading...' : currentSessionChallenge?.is_last_question ? 'Finish Session' : 'Next Question'}
                       </button>
+
+                      <button
+                        onClick={() => setCurrentCode(currentSessionChallenge?.challenge.starter_code || '')}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: 6,
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          color: 'var(--text-muted)',
+                          fontSize: 12,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Reset
+                      </button>
+
+                      <button
+                        onClick={handleSubmitCode}
+                        disabled={isSubmitting || isLoadingChallenge}
+                        className="btn-primary-gradient"
+                        style={{
+                          padding: '5px 18px',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          boxShadow: '0 0 16px rgba(16, 185, 129, 0.35)',
+                        }}
+                      >
+                        {isSubmitting ? 'Evaluating...' : 'Submit Solution →'}
+                      </button>
                     </>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-emerald)' }}>
+                      <span className="pulsing-emerald-dot" style={{ width: 6, height: 6 }}></span>
+                      <span>✦ Free Live AI Studio Ready</span>
+                    </div>
                   )}
-
-                  <button
-                    onClick={() => setCurrentCode(currentSessionChallenge?.challenge.starter_code || activePreset.starterCode)}
-                    style={{
-                      padding: '5px 12px',
-                      borderRadius: 6,
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      background: 'rgba(255, 255, 255, 0.04)',
-                      color: 'var(--text-muted)',
-                      fontSize: 12,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Reset
-                  </button>
-
-                  <button
-                    onClick={handleSubmitCode}
-                    disabled={isSubmitting || isLoadingChallenge}
-                    className="btn-primary-gradient"
-                    style={{
-                      padding: '5px 18px',
-                      fontSize: 12,
-                      fontWeight: 700,
-                      boxShadow: '0 0 16px rgba(16, 185, 129, 0.35)',
-                    }}
-                  >
-                    {isSubmitting ? 'Evaluating...' : 'Submit Solution →'}
-                  </button>
                 </div>
               </div>
 
               {/* Main Dual Split Pane */}
               <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-              {/* Left Column: Problem & Instructions */}
+              {/* Left Column: Problem & Instructions or Free Practice Launcher */}
               <div
                 style={{
                   width: '42%',
@@ -1132,18 +938,260 @@ export default function App() {
                       ✦ Calibrating Concept Challenge...
                     </div>
                   </div>
+                ) : !activeSession ? (
+                  /* INITIATION PANEL: START PRACTICING FOR FREE */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {/* Header */}
+                    <div>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 999, background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)', color: '#c0c1ff', fontSize: 11, fontWeight: 600, marginBottom: 12 }}>
+                        <span>⚡</span> 100% FREE AI PRACTICE STUDIO
+                      </div>
+                      <h2 style={{ fontSize: 24, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 8px 0' }}>
+                        Start Practicing for Free
+                      </h2>
+                      <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                        No LeetCode DSA boilerplate. Solve real-world scenario challenges evaluated live by Gemini AI. Configure your preferences below to launch your session.
+                      </p>
+                    </div>
+
+                    {/* Step 1: Language Track */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>
+                        1. Select Language Track
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+                        {['Python', 'JavaScript', 'Java', 'C++', 'C'].map((lang) => {
+                          const isSel = selectedTrack.toLowerCase() === lang.toLowerCase();
+                          return (
+                            <button
+                              key={lang}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTrack(lang);
+                                const lObj = languages.find((l) => l.name.toLowerCase() === lang.toLowerCase());
+                                if (lObj && lObj.topics.length > 0) {
+                                  setSelectedTopicSlug(lObj.topics[0].slug);
+                                }
+                              }}
+                              style={{
+                                padding: '8px 4px',
+                                borderRadius: 8,
+                                border: isSel ? '1px solid var(--accent-indigo)' : '1px solid rgba(255, 255, 255, 0.08)',
+                                background: isSel ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                                color: isSel ? '#ffffff' : 'var(--text-muted)',
+                                fontSize: 12,
+                                fontWeight: isSel ? 700 : 500,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                                textAlign: 'center',
+                              }}
+                            >
+                              {lang}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Step 2: Practice Mode */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>
+                        2. Practice Mode
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <button
+                          type="button"
+                          onClick={() => setSessionType('TOPIC')}
+                          style={{
+                            padding: '12px',
+                            borderRadius: 8,
+                            border: sessionType === 'TOPIC' ? '1px solid var(--accent-indigo)' : '1px solid rgba(255, 255, 255, 0.08)',
+                            background: sessionType === 'TOPIC' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                            color: sessionType === 'TOPIC' ? '#ffffff' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                          }}
+                        >
+                          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>🎯 Foundational Topic</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Deep dive into a specific concept</div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSessionType('MIXED')}
+                          style={{
+                            padding: '12px',
+                            borderRadius: 8,
+                            border: sessionType === 'MIXED' ? '1px solid var(--accent-indigo)' : '1px solid rgba(255, 255, 255, 0.08)',
+                            background: sessionType === 'MIXED' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                            color: sessionType === 'MIXED' ? '#ffffff' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                          }}
+                        >
+                          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>🔀 Mixed Track</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Adaptive mix of core topics</div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Step 3: Choose Topic (if TOPIC mode) */}
+                    {sessionType === 'TOPIC' && (
+                      <div>
+                        <label style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>
+                          3. Choose Foundational Concept
+                        </label>
+                        <select
+                          value={selectedTopicSlug}
+                          onChange={(e) => setSelectedTopicSlug(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            borderRadius: 8,
+                            background: 'rgba(15, 23, 42, 0.95)',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            color: '#ffffff',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            outline: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {(() => {
+                            const curLang = languages.find((l) => l.name.toLowerCase() === selectedTrack.toLowerCase());
+                            const topics = curLang?.topics || [];
+                            if (topics.length === 0) {
+                              return <option value="">Loading topics...</option>;
+                            }
+                            return topics.map((t) => (
+                              <option key={t.slug} value={t.slug}>
+                                {t.name}
+                              </option>
+                            ));
+                          })()}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Step 4: Difficulty & Set Size */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>
+                          Difficulty Level
+                        </label>
+                        <select
+                          value={selectedDifficulty}
+                          onChange={(e) => setSelectedDifficulty(e.target.value as any)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: 8,
+                            background: 'rgba(15, 23, 42, 0.95)',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            color: '#ffffff',
+                            fontSize: 12,
+                            outline: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <option value="ADAPTIVE">Adaptive (Recommended)</option>
+                          <option value="EASY">Easy (Beginner Friendly)</option>
+                          <option value="MEDIUM">Medium (Intermediate Logic)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>
+                          Challenge Batch Size
+                        </label>
+                        <select
+                          value={selectedCount}
+                          onChange={(e) => setSelectedCount(Number(e.target.value) as any)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: 8,
+                            background: 'rgba(15, 23, 42, 0.95)',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            color: '#ffffff',
+                            fontSize: 12,
+                            outline: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <option value={5}>5 Questions (Fast Batch)</option>
+                          <option value={10}>10 Questions</option>
+                          <option value={20}>20 Questions</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Primary CTA Launch Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleStartPracticeSession()}
+                      disabled={isCreatingSession}
+                      className="btn-primary-gradient"
+                      style={{
+                        padding: '14px',
+                        fontSize: 14,
+                        fontWeight: 700,
+                        borderRadius: 10,
+                        marginTop: 4,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)',
+                        cursor: isCreatingSession ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {isCreatingSession ? (
+                        <>
+                          <div className="pulsing-emerald-dot" style={{ width: 8, height: 8 }}></div>
+                          <span>Generating 5 AI Challenges with Gemini...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>⚡</span>
+                          <span>Start Practicing for Free →</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Guarantees / Highlights */}
+                    <div style={{ padding: '14px 16px', borderRadius: 8, background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                      <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', marginBottom: 8, textTransform: 'uppercase' }}>
+                        ✦ SkillForge Engine Guarantees
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+                        <div>✓ <strong>100% Real-World Scenarios:</strong> University-style foundational programming without DSA gimmicks.</div>
+                        <div>✓ <strong>Instant Batch Generation:</strong> 5 questions created in 1 AI call with zero wait between problems.</div>
+                        <div>✓ <strong>Live Gemini Evaluation:</strong> Rubric scoring, edge cases & logic analysis without code sandboxes.</div>
+                      </div>
+                    </div>
+                  </div>
                 ) : (() => {
                   const challenge = currentSessionChallenge?.challenge;
-                  const title = challenge?.title || activePreset.title;
-                  const statement = challenge?.statement || activePreset.description;
-                  const difficulty = challenge?.difficulty || activePreset.difficulty;
-                  const topic = challenge?.topic_name || activePreset.topic;
-                  const hints = challenge?.hints || activePreset.hints;
-                  const constraints = challenge?.constraints_text
+                  if (!challenge) {
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 14 }}>
+                        <div className="pulsing-emerald-dot" style={{ width: 10, height: 10 }}></div>
+                        <div style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                          ✦ Loading Challenge...
+                        </div>
+                      </div>
+                    );
+                  }
+                  const title = challenge.title;
+                  const statement = challenge.statement;
+                  const difficulty = challenge.difficulty;
+                  const topic = challenge.topic_name || activeSession?.topic_name || 'Foundations';
+                  const hints = challenge.hints || [];
+                  const constraints = challenge.constraints_text
                     ? challenge.constraints_text.split('\n').filter((c) => c.trim().length > 0)
-                    : activePreset.constraints;
-                  const targetConcepts = challenge?.target_concepts || [];
-                  const origin = challenge?.origin || 'VERIFIED';
+                    : [];
+                  const targetConcepts = challenge.target_concepts || [];
+                  const origin = challenge.origin || 'AI_GENERATED';
 
                   return (
                     <>
@@ -1263,37 +1311,108 @@ export default function App() {
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', background: 'rgba(56, 189, 248, 0.08)', padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(56, 189, 248, 0.2)' }}>
                       <span>📄</span> solution.{selectedTrack === 'Python' ? 'py' : selectedTrack === 'C++' ? 'cpp' : selectedTrack === 'Java' ? 'java' : selectedTrack === 'C' ? 'c' : 'ts'}
                     </span>
-                    <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>• Untrusted Text Input Buffer</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                      {activeSession ? '• Untrusted Text Input Buffer' : '• Standby'}
+                    </span>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                     <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
                       Gemini 2.5 Rubric Active
                     </span>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(currentCode);
-                        setNotification('Copied code to clipboard');
-                        setTimeout(() => setNotification(null), 2500);
-                      }}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                      title="Copy Code"
-                    >
-                      <span>📋</span> Copy
-                    </button>
+                    {activeSession && (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(currentCode);
+                          setNotification('Copied code to clipboard');
+                          setTimeout(() => setNotification(null), 2500);
+                        }}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                        title="Copy Code"
+                      >
+                        <span>📋</span> Copy
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {/* Editor Textarea */}
-                <div style={{ flex: reviewResult ? '1 1 50%' : '1 1 100%', position: 'relative', overflow: 'hidden' }}>
-                  <textarea
-                    value={currentCode}
-                    onChange={(e) => setCurrentCode(e.target.value)}
-                    className="code-editor-textarea"
-                    placeholder="Type or paste your code solution here..."
-                    spellCheck={false}
-                  />
-                </div>
+                {/* Editor Textarea or Standby Initiation State */}
+                {!activeSession ? (
+                  <div
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '40px 32px',
+                      textAlign: 'center',
+                      background: 'radial-gradient(circle at 50% 45%, rgba(99, 102, 241, 0.08), transparent 70%)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 68,
+                        height: 68,
+                        borderRadius: 20,
+                        background: 'rgba(99, 102, 241, 0.12)',
+                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 30,
+                        marginBottom: 18,
+                        boxShadow: '0 8px 32px rgba(99, 102, 241, 0.15)',
+                      }}
+                    >
+                      ⌨️
+                    </div>
+                    <h3 style={{ fontSize: 20, fontWeight: 800, color: '#ffffff', marginBottom: 10, letterSpacing: '-0.01em' }}>
+                      Workspace Standby
+                    </h3>
+                    <p style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 440, lineHeight: 1.7, marginBottom: 28 }}>
+                      Configure your language track and foundational concept on the left, then click{' '}
+                      <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>"Start Practicing for Free"</span> to generate live real-world challenges directly in this editor.
+                    </p>
+
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: 14,
+                        maxWidth: 620,
+                        width: '100%',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ padding: '14px 16px', borderRadius: 8, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                        <div style={{ fontSize: 16, marginBottom: 6 }}>✦</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>Real Invariants</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.5 }}>Practical domain logic, voting rules, bill totals & validations.</div>
+                      </div>
+                      <div style={{ padding: '14px 16px', borderRadius: 8, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                        <div style={{ fontSize: 16, marginBottom: 6 }}>⚡</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>Gemini Evaluation</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.5 }}>Deep rubric evaluation grading edge cases & logical correctness.</div>
+                      </div>
+                      <div style={{ padding: '14px 16px', borderRadius: 8, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                        <div style={{ fontSize: 16, marginBottom: 6 }}>⏩</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>Fast 5-Q Batches</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.5 }}>5 problems generated at once with zero wait between skips.</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ flex: reviewResult ? '1 1 50%' : '1 1 100%', position: 'relative', overflow: 'hidden' }}>
+                    <textarea
+                      value={currentCode}
+                      onChange={(e) => setCurrentCode(e.target.value)}
+                      className="code-editor-textarea"
+                      placeholder="Type or paste your code solution here..."
+                      spellCheck={false}
+                    />
+                  </div>
+                )}
 
                 {/* Live Real Evaluation Rubric Review Panel */}
                 {reviewResult && (
