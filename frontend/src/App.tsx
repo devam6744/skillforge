@@ -68,6 +68,16 @@ export default function App() {
   const [showBenchmarkOverlay, setShowBenchmarkOverlay] = useState<boolean>(true);
   const [expandedTopicSlug, setExpandedTopicSlug] = useState<string | null>(null);
 
+  // Network, Offline & Connectivity Resilience State
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [offlineDismissed, setOfflineDismissed] = useState<boolean>(false);
+  const [backOnlineNotice, setBackOnlineNotice] = useState<boolean>(false);
+  const [networkErrorModal, setNetworkErrorModal] = useState<{
+    title: string;
+    message: string;
+    isOffline?: boolean;
+  } | null>(null);
+
   // GitHub-Style Activity Heatmap & Rhythm State
   const [hoveredHeatmapDay, setHoveredHeatmapDay] = useState<any | null>(null);
   const [selectedHeatmapDate, setSelectedHeatmapDate] = useState<string | null>(null);
@@ -80,6 +90,46 @@ export default function App() {
       .catch((err) => console.error('Failed to load analytics:', err))
       .finally(() => setAnalyticsLoading(false));
   };
+
+  const handleNetworkError = (title: string, defaultMessage: string, err?: any) => {
+    const isOff = !navigator.onLine ||
+      err?.details?.error === 'INTERNET_REQUIRED' ||
+      err?.message?.toLowerCase().includes('fetch') ||
+      err?.message?.toLowerCase().includes('network') ||
+      err?.message?.toLowerCase().includes('internet');
+
+    const msg = isOff
+      ? 'Live AI code evaluation, challenge generation, and telemetry synchronization require an active internet connection. Please verify your WiFi or network connection.'
+      : (err?.message || defaultMessage);
+
+    setNetworkErrorModal({
+      title: isOff ? 'Internet Connection Required' : title,
+      message: msg,
+      isOffline: isOff,
+    });
+  };
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      setOfflineDismissed(false);
+      setBackOnlineNotice(true);
+      setTimeout(() => setBackOnlineNotice(false), 4500);
+      if (workspaceTab === 'history') {
+        loadAnalytics(selectedTrack, analyticsTimeWindow);
+      }
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setOfflineDismissed(false);
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [workspaceTab, selectedTrack, analyticsTimeWindow]);
 
   // Load Challenge for Active Session
   const loadSessionChallenge = async (sessionId: string) => {
@@ -132,7 +182,7 @@ export default function App() {
         setNotification('⚠️ Internet connection required: Live AI generation requires an active internet connection.');
         setTimeout(() => setNotification(null), 6000);
       } else {
-        alert(err.message || 'Could not load next challenge.');
+        handleNetworkError('Challenge Load Failed', 'Could not load next challenge.', err);
       }
     } finally {
       setIsLoadingChallenge(false);
@@ -163,7 +213,7 @@ export default function App() {
         setNotification('⚠️ Internet connection required: Live AI generation requires an active internet connection.');
         setTimeout(() => setNotification(null), 6000);
       } else {
-        alert(err.message || 'Could not skip challenge.');
+        handleNetworkError('Skip Request Failed', 'Could not skip challenge.', err);
       }
     } finally {
       setIsLoadingChallenge(false);
@@ -280,7 +330,7 @@ export default function App() {
       setNotification(`Practice session started for ${newSession.language_name} (${newSession.topic_name || 'Mixed Track'})!`);
       setTimeout(() => setNotification(null), 4000);
     } catch (err: any) {
-      alert(err.message || 'Failed to start practice session.');
+      handleNetworkError('Session Start Failed', 'Failed to start practice session.', err);
     } finally {
       setIsCreatingSession(false);
     }
@@ -297,7 +347,7 @@ export default function App() {
       setTimeout(() => setNotification(null), 3000);
       loadHistory();
     } catch (err: any) {
-      alert(err.message || 'Failed to abandon session.');
+      handleNetworkError('Request Failed', 'Failed to abandon session.', err);
     }
   };
 
@@ -312,7 +362,7 @@ export default function App() {
       setWorkspaceTab('history');
       loadHistory();
     } catch (err: any) {
-      alert(err.message || 'Failed to complete session.');
+      handleNetworkError('Request Failed', 'Failed to complete session.', err);
     }
   };
 
@@ -498,12 +548,7 @@ export default function App() {
       });
     } catch (err: any) {
       console.error('Submission error:', err);
-      if (err.details?.error === 'INTERNET_REQUIRED' || err.message?.includes('internet') || err.message?.includes('Internet')) {
-        setNotification('⚠️ Internet connection required: Live AI evaluation requires an active internet connection.');
-        setTimeout(() => setNotification(null), 6000);
-      } else {
-        alert(err.message || 'Evaluation request failed. Please check backend connection.');
-      }
+      handleNetworkError('Evaluation Request Failed', 'Evaluation request failed. Please check backend connection.', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -602,11 +647,222 @@ export default function App() {
   }
 
   // =========================================================================
+  // Network Status Overlay (Persistent Offline Bar, Toast & Cyberpunk Error Modal)
+  const renderNetworkStatus = () => (
+    <>
+      {/* Persistent Offline Floating Status Bar */}
+      {!isOnline && !offlineDismissed && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 14,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            background: 'rgba(15, 23, 42, 0.95)',
+            border: '1px solid rgba(239, 68, 68, 0.5)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.7), 0 0 20px rgba(239, 68, 68, 0.25)',
+            backdropFilter: 'blur(16px)',
+            borderRadius: 12,
+            padding: '10px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            maxWidth: '92vw',
+          }}
+        >
+          <span style={{ position: 'relative', display: 'flex', width: 10, height: 10 }}>
+            <span style={{ position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: '50%', background: '#ef4444', opacity: 0.75 }} />
+            <span style={{ position: 'relative', display: 'inline-flex', borderRadius: '50%', height: 10, width: 10, background: '#ef4444' }} />
+          </span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>📡 Offline Mode</span>
+              <span style={{ fontSize: 11, color: '#fca5a5', fontFamily: 'var(--font-mono)' }}>[Network Disconnected]</span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+              Live code evaluation and telemetry sync are paused until connection returns.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (navigator.onLine) {
+                setIsOnline(true);
+                setBackOnlineNotice(true);
+                setTimeout(() => setBackOnlineNotice(false), 4000);
+              } else {
+                setNotification('Still offline. Please check your WiFi or mobile network connection.');
+                setTimeout(() => setNotification(null), 4000);
+              }
+            }}
+            style={{
+              padding: '5px 12px',
+              borderRadius: 6,
+              background: 'rgba(239, 68, 68, 0.2)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#fecaca',
+              fontSize: 11,
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Check Connection
+          </button>
+          <button
+            type="button"
+            onClick={() => setOfflineDismissed(true)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-dim)',
+              fontSize: 14,
+              cursor: 'pointer',
+              padding: '4px 6px',
+            }}
+            title="Dismiss notice"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Back Online Toast */}
+      {backOnlineNotice && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 14,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            background: 'rgba(6, 78, 59, 0.95)',
+            border: '1px solid rgba(16, 185, 129, 0.6)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.6), 0 0 20px rgba(16, 185, 129, 0.3)',
+            backdropFilter: 'blur(16px)',
+            borderRadius: 12,
+            padding: '10px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            color: '#ffffff',
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+        >
+          <span>⚡ Back Online! Connection restored.</span>
+        </div>
+      )}
+
+      {/* Dedicated Offline / Network Error Dialog Modal */}
+      {networkErrorModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={() => setNetworkErrorModal(null)}
+        >
+          <div
+            style={{
+              background: 'rgba(15, 23, 42, 0.95)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(239, 68, 68, 0.2)',
+              borderRadius: 16,
+              maxWidth: 480,
+              width: '100%',
+              padding: '24px 28px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+                📡
+              </div>
+              <div>
+                <span className="tag-badge tag-amber" style={{ fontSize: 9 }}>
+                  {networkErrorModal.isOffline ? 'OFFLINE_MODE' : 'NETWORK_ERROR'}
+                </span>
+                <h3 style={{ margin: '4px 0 0 0', fontSize: 17, fontWeight: 700, color: '#ffffff' }}>
+                  {networkErrorModal.title}
+                </h3>
+              </div>
+            </div>
+
+            <p style={{ margin: 0, fontSize: 13, color: '#cbd5e1', lineHeight: 1.6 }}>
+              {networkErrorModal.message}
+            </p>
+
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+              💡 Tip: Your code remains preserved in the editor. You will not lose your work while offline.
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => setNetworkErrorModal(null)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 8,
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'var(--text-muted)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Continue Offline
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setNetworkErrorModal(null);
+                  if (navigator.onLine) {
+                    setIsOnline(true);
+                    setNotification('Connection restored! You can now submit your solution.');
+                    setTimeout(() => setNotification(null), 4000);
+                  } else {
+                    setNetworkErrorModal({
+                      title: 'Still Disconnected',
+                      message: 'Your system is still offline. Please check your internet connection or WiFi router.',
+                      isOffline: true,
+                    });
+                  }
+                }}
+                className="btn-primary"
+                style={{
+                  padding: '8px 18px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                ⚡ Test Connection & Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   // VIEW 1: AUTHENTICATED USER CONSOLE (Dedicated Workspace Window, No Landing Scroll)
   // =========================================================================
   if (currentUser) {
     return (
       <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', background: 'var(--bg-deep)', overflow: 'hidden' }}>
+        {renderNetworkStatus()}
         <div className="ambient-bg-grid"></div>
 
         {/* TOP WORKSPACE APPLICATION BAR - CLEAN & PROFESSIONAL */}
@@ -2219,8 +2475,8 @@ export default function App() {
                             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
                               Peak Cadence: {peakStreakDays} Days
                             </div>
-                            <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', marginTop: 4 }}>
-                              48h Streak Freeze Guard
+                            <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: streakDays > 0 ? 'var(--accent-emerald)' : '#fbbf24', marginTop: 4 }}>
+                              {analyticsData?.kpis?.streak_message || 'Practice questions daily to make streak'}
                             </div>
                           </div>
 
@@ -2295,16 +2551,34 @@ export default function App() {
 
                   {/* SVG Chart Canvas */}
                   {(() => {
-                    const rawSeries = analyticsData?.trajectory_series || [
-                      { step: 1, scenario: 'Tax Bracket Bounds Verifier', score: 84, bayesian_avg: 84.0, topic: 'Conditionals', date: 'Oct 18' },
-                      { step: 2, scenario: 'Discount Rules & Tiers', score: 91, bayesian_avg: 87.5, topic: 'Conditionals', date: 'Oct 19' },
-                      { step: 3, scenario: 'Inventory Stock Level Check', score: 86, bayesian_avg: 87.0, topic: 'Conditionals', date: 'Oct 20' },
-                      { step: 4, scenario: 'Transaction Ledger Aggregator', score: 96, bayesian_avg: 89.3, topic: 'Iteration & Loops', date: 'Oct 21' },
-                      { step: 5, scenario: 'Payroll Overtime Deductor', score: 89, bayesian_avg: 89.2, topic: 'Iteration & Loops', date: 'Oct 22' },
-                      { step: 6, scenario: 'User Auth Session Tokenizer', score: 98, bayesian_avg: 90.7, topic: 'Data Structures', date: 'Oct 23' },
-                      { step: 7, scenario: 'Byzantine Quorum Verifier', score: 97, bayesian_avg: 91.6, topic: 'Defensive Edge-Cases', date: 'Oct 24' },
-                      { step: 8, scenario: 'Atomic Ring Buffer Bounds', score: 99, bayesian_avg: 92.5, topic: 'Defensive Edge-Cases', date: 'Oct 25' },
-                    ];
+                    const rawSeries = analyticsData?.trajectory_series || [];
+
+                    if (rawSeries.length === 0) {
+                      return (
+                        <div style={{ padding: '42px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                          <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, marginBottom: 12 }}>
+                            📈
+                          </div>
+                          <h4 style={{ fontSize: 16, fontWeight: 700, color: '#ffffff', margin: '0 0 6px 0' }}>
+                            No Telemetry Trajectory Yet
+                          </h4>
+                          <p style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 440, lineHeight: 1.5, margin: '0 0 16px 0' }}>
+                            Complete practice challenges in the Arena to begin plotting your continuous rubric convergence curve and Bayesian mastery trajectory.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const firstTopic = languages.find(l => l.name.toLowerCase() === selectedTrack.toLowerCase())?.topics[0]?.slug || selectedTopicSlug;
+                              handleStartPracticeSession(firstTopic, 'TOPIC');
+                            }}
+                            className="btn-primary"
+                            style={{ padding: '8px 18px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                          >
+                            <span>⚡ Start First Practice Challenge</span>
+                          </button>
+                        </div>
+                      );
+                    }
 
                     const width = 860;
                     const height = 220;
@@ -2957,10 +3231,10 @@ export default function App() {
                         {/* Cadence Badges */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span className="tag-badge tag-emerald" style={{ fontSize: 10 }}>
-                            🔥 {analyticsData?.heatmap_meta?.current_streak ?? 7} Day Streak
+                            🔥 {analyticsData?.heatmap_meta?.current_streak ?? 0} Day Streak
                           </span>
                           <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
-                            {analyticsData?.heatmap_meta?.total_submissions ?? 124} Submissions
+                            {analyticsData?.heatmap_meta?.total_submissions ?? 0} Submissions
                           </span>
                         </div>
                       </div>
@@ -3100,10 +3374,10 @@ export default function App() {
                         return (
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                             <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
-                              ✦ Hover or click any box to inspect date, submission density, and topics practiced
+                              ✦ {analyticsData?.heatmap_meta?.streak_message || 'Practice questions daily to make streak'}
                             </span>
                             <span style={{ fontSize: 11, color: 'var(--accent-cyan)' }}>
-                              {analyticsData?.heatmap_meta?.active_days ?? 38} active practice days
+                              {analyticsData?.heatmap_meta?.active_days ?? 0} active practice days
                             </span>
                           </div>
                         );
@@ -3707,6 +3981,7 @@ export default function App() {
   // =========================================================================
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      {renderNetworkStatus()}
       {/* Background Ambience */}
       <div className="ambient-bg-grid"></div>
       <div className="glow-orb-primary"></div>
