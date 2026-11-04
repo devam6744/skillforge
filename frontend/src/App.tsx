@@ -55,7 +55,7 @@ export default function App() {
   // Phase 4: Engineering Analytics & Interactive Telemetry State
   const [analyticsData, setAnalyticsData] = useState<any | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [analyticsTimeWindow, setAnalyticsTimeWindow] = useState<'7d' | '30d' | 'all'>('30d');
+  const [analyticsTimeWindow, setAnalyticsTimeWindow] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
   const [matrixFilter, setMatrixFilter] = useState<'ALL' | 'MASTERED' | 'PROFICIENT' | 'PRACTICING'>('ALL');
   const [evidenceFilter, setEvidenceFilter] = useState<string>('');
   const [evidenceTierFilter, setEvidenceTierFilter] = useState<'ALL' | 'OPTIMAL' | 'SOUND' | 'REVIEW'>('ALL');
@@ -72,9 +72,10 @@ export default function App() {
   const [hoveredHeatmapDay, setHoveredHeatmapDay] = useState<any | null>(null);
   const [selectedHeatmapDate, setSelectedHeatmapDate] = useState<string | null>(null);
 
-  const loadAnalytics = (track?: string) => {
+  const loadAnalytics = (track?: string, window?: string) => {
     setAnalyticsLoading(true);
-    api.practice.getAnalytics(track || selectedTrack)
+    const win = window || analyticsTimeWindow;
+    api.practice.getAnalytics(track || selectedTrack, win)
       .then((data) => setAnalyticsData(data))
       .catch((err) => console.error('Failed to load analytics:', err))
       .finally(() => setAnalyticsLoading(false));
@@ -242,7 +243,7 @@ export default function App() {
   useEffect(() => {
     if (workspaceTab === 'history' && currentUser) {
       loadHistory();
-      loadAnalytics(selectedTrack);
+      loadAnalytics(selectedTrack, analyticsTimeWindow);
     }
   }, [workspaceTab, currentUser, selectedTrack]);
 
@@ -1889,7 +1890,7 @@ export default function App() {
 
                     <button
                       onClick={() => {
-                        loadAnalytics(selectedTrack);
+                        loadAnalytics(selectedTrack, analyticsTimeWindow);
                         loadHistory();
                       }}
                       disabled={analyticsLoading}
@@ -1932,7 +1933,7 @@ export default function App() {
                           type="button"
                           onClick={() => {
                             setSelectedTrack(lang);
-                            loadAnalytics(lang);
+                            loadAnalytics(lang, analyticsTimeWindow);
                           }}
                           style={{
                             padding: '5px 12px',
@@ -1962,17 +1963,21 @@ export default function App() {
                     {[
                       { id: '7d', label: 'Last 7 Days' },
                       { id: '30d', label: 'Last 30 Days' },
+                      { id: '90d', label: 'Last 90 Days' },
                       { id: 'all', label: 'All Time' },
                     ].map((w) => (
                       <button
                         key={w.id}
                         type="button"
-                        onClick={() => setAnalyticsTimeWindow(w.id as any)}
+                        onClick={() => {
+                          setAnalyticsTimeWindow(w.id as any);
+                          loadAnalytics(selectedTrack, w.id);
+                        }}
                         style={{
                           padding: '4px 10px',
                           borderRadius: 6,
                           border: analyticsTimeWindow === w.id ? '1px solid var(--accent-indigo)' : '1px solid transparent',
-                          background: analyticsTimeWindow === w.id ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
+                          background: analyticsTimeWindow === w.id ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
                           color: analyticsTimeWindow === w.id ? '#ffffff' : 'var(--text-muted)',
                           fontFamily: 'var(--font-mono)',
                           fontSize: 11,
@@ -1996,8 +2001,25 @@ export default function App() {
                 {/* ========================================================================= */}
                 {(() => {
                   const displayScore = analyticsData?.kpis?.global_rubric_score ?? 95.0;
-                  const circleCircumference = 2 * Math.PI * 34; // r=34 -> ~213.6
-                  const strokeOffset = circleCircumference - (circleCircumference * displayScore) / 100;
+                  const totalSolved = analyticsData?.kpis?.total_scenarios_solved ?? 42;
+                  const batchesCount = analyticsData?.kpis?.batches_count ?? 10;
+                  const optimalCount = analyticsData?.kpis?.optimal_count ?? 28;
+                  const soundCount = analyticsData?.kpis?.sound_count ?? 12;
+                  const reviewCount = analyticsData?.kpis?.review_count ?? 2;
+                  const logicScore = analyticsData?.kpis?.logic_accuracy_percentage ?? 95.2;
+                  const streakDays = analyticsData?.kpis?.streak_days ?? 7;
+                  const peakStreakDays = analyticsData?.kpis?.peak_streak_days ?? 14;
+
+                  const circleCircumference = 2 * Math.PI * 34; // r=34 -> ~213.63
+                  const scoreStrokeOffset = circleCircumference - (circleCircumference * Math.min(100, Math.max(0, displayScore))) / 100;
+
+                  const optimalRatio = Math.min(100, Math.max(0, Math.round((optimalCount / Math.max(1, totalSolved)) * 100)));
+                  const optimalStrokeOffset = circleCircumference - (circleCircumference * optimalRatio) / 100;
+
+                  const logicStrokeOffset = circleCircumference - (circleCircumference * Math.min(100, Math.max(0, logicScore))) / 100;
+
+                  const streakRatio = Math.min(100, Math.max(0, Math.round((streakDays / Math.max(1, peakStreakDays)) * 100)));
+                  const streakStrokeOffset = circleCircumference - (circleCircumference * streakRatio) / 100;
 
                   return (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
@@ -2055,13 +2077,13 @@ export default function App() {
                                 stroke="var(--accent-emerald)"
                                 strokeWidth="6"
                                 strokeDasharray={circleCircumference}
-                                strokeDashoffset={strokeOffset}
+                                strokeDashoffset={scoreStrokeOffset}
                                 strokeLinecap="round"
                                 style={{ transition: 'stroke-dashoffset 0.5s ease' }}
                               />
                             </svg>
                             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 700 }}>
-                              {Math.round(displayScore)}
+                              {Math.round(displayScore)}%
                             </div>
                           </div>
                         </div>
@@ -2089,16 +2111,16 @@ export default function App() {
                           <div>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                               <span style={{ fontSize: 34, fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em' }}>
-                                {analyticsData?.kpis?.total_scenarios_solved ?? '42'}
+                                {totalSolved}
                               </span>
                               <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
-                                in {analyticsData?.kpis?.batches_count ?? '10'} sets
+                                in {batchesCount} sets
                               </span>
                             </div>
                             <div style={{ display: 'flex', gap: 8, marginTop: 6, fontSize: 11, fontFamily: 'var(--font-mono)' }}>
-                              <span style={{ color: 'var(--accent-emerald)' }}>28 Optimal</span>
-                              <span style={{ color: 'var(--accent-cyan)' }}>12 Sound</span>
-                              <span style={{ color: 'var(--text-dim)' }}>2 Review</span>
+                              <span style={{ color: 'var(--accent-emerald)' }}>{optimalCount} Optimal</span>
+                              <span style={{ color: 'var(--accent-cyan)' }}>{soundCount} Sound</span>
+                              <span style={{ color: 'var(--text-dim)' }}>{reviewCount} Review</span>
                             </div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                               Zero sandbox executions
@@ -2109,10 +2131,10 @@ export default function App() {
                           <div style={{ position: 'relative', width: 78, height: 78, flexShrink: 0 }}>
                             <svg width="78" height="78" viewBox="0 0 78 78" style={{ transform: 'rotate(-90deg)' }}>
                               <circle cx="39" cy="39" r="34" fill="transparent" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="6" />
-                              <circle cx="39" cy="39" r="34" fill="transparent" stroke="var(--accent-emerald)" strokeWidth="6" strokeDasharray={circleCircumference} strokeDashoffset={circleCircumference * 0.34} strokeLinecap="round" />
+                              <circle cx="39" cy="39" r="34" fill="transparent" stroke="var(--accent-indigo)" strokeWidth="6" strokeDasharray={circleCircumference} strokeDashoffset={optimalStrokeOffset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
                             </svg>
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--accent-emerald)', fontWeight: 700 }}>
-                              66%
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--accent-indigo)', fontWeight: 700 }}>
+                              {optimalRatio}%
                             </div>
                           </div>
                         </div>
@@ -2140,7 +2162,7 @@ export default function App() {
                           <div>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                               <span style={{ fontSize: 34, fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em' }}>
-                                {analyticsData?.kpis?.logic_accuracy_percentage ?? '95.2'}%
+                                {logicScore}%
                               </span>
                               <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-emerald)' }}>
                                 sound
@@ -2157,10 +2179,10 @@ export default function App() {
                           <div style={{ position: 'relative', width: 78, height: 78, flexShrink: 0 }}>
                             <svg width="78" height="78" viewBox="0 0 78 78" style={{ transform: 'rotate(-90deg)' }}>
                               <circle cx="39" cy="39" r="34" fill="transparent" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="6" />
-                              <circle cx="39" cy="39" r="34" fill="transparent" stroke="var(--accent-cyan)" strokeWidth="6" strokeDasharray={circleCircumference} strokeDashoffset={circleCircumference * 0.05} strokeLinecap="round" />
+                              <circle cx="39" cy="39" r="34" fill="transparent" stroke="var(--accent-cyan)" strokeWidth="6" strokeDasharray={circleCircumference} strokeDashoffset={logicStrokeOffset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
                             </svg>
                             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontWeight: 700 }}>
-                              95%
+                              {Math.round(logicScore)}%
                             </div>
                           </div>
                         </div>
@@ -2188,14 +2210,14 @@ export default function App() {
                           <div>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                               <span style={{ fontSize: 34, fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em' }}>
-                                {analyticsData?.kpis?.streak_days ?? '7'}
+                                {streakDays}
                               </span>
                               <span style={{ fontSize: 14, fontFamily: 'var(--font-mono)', color: '#fbbf24', fontWeight: 700 }}>
                                 Days
                               </span>
                             </div>
                             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                              Peak Cadence: {analyticsData?.kpis?.peak_streak_days ?? '14'} Days
+                              Peak Cadence: {peakStreakDays} Days
                             </div>
                             <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', marginTop: 4 }}>
                               48h Streak Freeze Guard
@@ -2205,10 +2227,10 @@ export default function App() {
                           <div style={{ position: 'relative', width: 78, height: 78, flexShrink: 0 }}>
                             <svg width="78" height="78" viewBox="0 0 78 78" style={{ transform: 'rotate(-90deg)' }}>
                               <circle cx="39" cy="39" r="34" fill="transparent" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="6" />
-                              <circle cx="39" cy="39" r="34" fill="transparent" stroke="#fbbf24" strokeWidth="6" strokeDasharray={circleCircumference} strokeDashoffset={circleCircumference * 0.4} strokeLinecap="round" />
+                              <circle cx="39" cy="39" r="34" fill="transparent" stroke="#fbbf24" strokeWidth="6" strokeDasharray={circleCircumference} strokeDashoffset={streakStrokeOffset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
                             </svg>
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
-                              🔥
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontFamily: 'var(--font-mono)', color: '#fbbf24', fontWeight: 700 }}>
+                              {streakRatio}%
                             </div>
                           </div>
                         </div>
@@ -2301,7 +2323,7 @@ export default function App() {
                     let rubricPoints = rawSeries.map((d: any, i: number) => `${getX(i)},${getY(d.score)}`).join(' ');
                     let bayesianPoints = rawSeries.map((d: any, i: number) => `${getX(i)},${getY(d.bayesian_avg)}`).join(' ');
 
-                    const activeHoverItem = hoveredTrajectoryIndex !== null ? rawSeries[hoveredTrajectoryIndex] : null;
+                    const activeHoverItem = (hoveredTrajectoryIndex !== null && hoveredTrajectoryIndex < rawSeries.length) ? rawSeries[hoveredTrajectoryIndex] : null;
 
                     return (
                       <div style={{ position: 'relative', width: '100%', overflowX: 'auto' }}>
@@ -2432,6 +2454,7 @@ export default function App() {
                                     summary: `Direct scenario review point from telemetry convergence curve. Bayesian average: ${d.bayesian_avg}%.`,
                                     proofs: ['#InvariantSound', '#VerifiedTelemetry'],
                                   });
+                                  setEvidenceFilter(d.topic);
                                 }}
                               >
                                 {/* Invisible wide hit-target */}
@@ -2545,7 +2568,7 @@ export default function App() {
                         <span>90% Senior Benchmark</span>
                       </span>
                     </div>
-                    <span>8 Scenarios Plotted</span>
+                    <span>{(analyticsData?.trajectory_series?.length ?? 12)} Scenarios Plotted ({analyticsTimeWindow.toUpperCase()})</span>
                   </div>
                 </div>
 
@@ -2781,6 +2804,123 @@ export default function App() {
                               );
                             })}
                           </div>
+
+                          {/* Active Dimension Deep-Dive & Targeted Practice CTA */}
+                          {(() => {
+                            const activeDim = dimensions.find((d: any) => d.dimension === selectedRadarDimension) || dimensions.find((d: any) => d.score < d.benchmark) || dimensions[0];
+                            if (!activeDim) return null;
+                            const isDeficit = activeDim.score < activeDim.benchmark;
+                            const diff = activeDim.score - activeDim.benchmark;
+
+                            return (
+                              <div
+                                style={{
+                                  marginTop: 14,
+                                  width: '100%',
+                                  padding: '12px 14px',
+                                  borderRadius: 8,
+                                  background: 'rgba(6, 14, 32, 0.85)',
+                                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 8,
+                                }}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontSize: 13 }}>🎯</span>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: '#ffffff' }}>
+                                      {activeDim.dimension}
+                                    </span>
+                                  </div>
+                                  <span
+                                    className={isDeficit ? 'tag-badge tag-amber' : 'tag-badge tag-emerald'}
+                                    style={{ fontSize: 10 }}
+                                  >
+                                    {isDeficit ? `${diff}% vs Benchmark` : `+${diff}% Above Benchmark`}
+                                  </span>
+                                </div>
+
+                                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                                  {activeDim.description}
+                                </p>
+
+                                {/* Progress Comparison Bar */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                                  <div style={{ flex: 1, height: 6, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 3, overflow: 'hidden', position: 'relative' }}>
+                                    <div
+                                      style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        height: '100%',
+                                        width: `${Math.min(100, activeDim.score)}%`,
+                                        background: isDeficit ? '#f59e0b' : 'var(--accent-emerald)',
+                                        borderRadius: 3,
+                                      }}
+                                    />
+                                    {showBenchmarkOverlay && (
+                                      <div
+                                        style={{
+                                          position: 'absolute',
+                                          top: 0,
+                                          left: `${activeDim.benchmark}%`,
+                                          width: 2,
+                                          height: '100%',
+                                          background: '#38bdf8',
+                                          zIndex: 2,
+                                        }}
+                                        title={`Benchmark: ${activeDim.benchmark}%`}
+                                      />
+                                    )}
+                                  </div>
+                                  <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: isDeficit ? '#fbbf24' : 'var(--accent-emerald)', fontWeight: 700 }}>
+                                    {activeDim.score}%
+                                  </span>
+                                </div>
+
+                                {/* Direct 1-Click Targeted Practice Trigger */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const dimSlugMap: Record<string, string> = {
+                                      'Logic & Invariants': 'variables-control-flow',
+                                      'Boundary & Edge Cases': 'conditionals-flow',
+                                      'Asymptotics & Memory': 'loops-iteration',
+                                      'Defensive Guarding': 'defensive-programming',
+                                      'Architecture & Style': 'functions-scope',
+                                    };
+                                    const mapped = dimSlugMap[activeDim.dimension];
+                                    const currentLang = languages.find((l) => l.name.toLowerCase() === selectedTrack.toLowerCase()) || languages[0];
+                                    const matchedTopic = currentLang?.topics.find((t) => (mapped && t.slug.includes(mapped)) || (mapped && mapped.includes(t.slug)) || t.name.toLowerCase().includes(activeDim.dimension.split(' ')[0].toLowerCase()));
+                                    const targetSlug = matchedTopic ? matchedTopic.slug : (currentLang?.topics[0]?.slug || selectedTopicSlug);
+                                    
+                                    handleStartPracticeSession(targetSlug, 'TOPIC');
+                                  }}
+                                  disabled={isCreatingSession}
+                                  style={{
+                                    marginTop: 4,
+                                    padding: '6px 12px',
+                                    borderRadius: 6,
+                                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(16, 185, 129, 0.2) 100%)',
+                                    border: '1px solid rgba(99, 102, 241, 0.5)',
+                                    color: '#ffffff',
+                                    fontSize: 11,
+                                    fontFamily: 'var(--font-mono)',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 6,
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                >
+                                  <span>⚡ Launch Targeted Practice ({activeDim.dimension.split(' ')[0]})</span>
+                                </button>
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     })()}

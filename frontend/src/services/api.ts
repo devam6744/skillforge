@@ -143,8 +143,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ challenge_id: challengeId, source_code: sourceCode }),
       }),
-    getAnalytics: (track?: string) =>
-      request<{
+    getAnalytics: (track?: string, window?: string) => {
+      const params = new URLSearchParams();
+      if (track) params.append('track', track);
+      if (window) params.append('window', window);
+      const query = params.toString() ? `?${params.toString()}` : '';
+      return request<{
         kpis: {
           global_rubric_score: number;
           trend_percentage: string;
@@ -158,6 +162,7 @@ export const api = {
           streak_days: number;
           peak_streak_days: number;
         };
+        selected_window?: string;
         calibration_matrix: Array<{
           topic_id: string;
           topic_slug: string;
@@ -169,6 +174,20 @@ export const api = {
           tags: string[];
           last_practiced: string;
           is_primary_vector: boolean;
+        }>;
+        trajectory_series: Array<{
+          step: number;
+          scenario: string;
+          score: number;
+          bayesian_avg: number;
+          topic: string;
+          date: string;
+        }>;
+        rubric_dimensions: Array<{
+          dimension: string;
+          score: number;
+          benchmark: number;
+          description: string;
         }>;
         diagnostic_insight: {
           title: string;
@@ -182,6 +201,25 @@ export const api = {
           target_topic_slug: string;
           remediation_cta: string;
         };
+        activity_heatmap: Array<{
+          date: string;
+          display_date: string;
+          day_of_week: number;
+          count: number;
+          level: number;
+          avg_score: number;
+          topics: string[];
+        }>;
+        heatmap_meta: {
+          total_submissions: number;
+          active_days: number;
+          current_streak: number;
+          peak_streak: number;
+          completion_rate: number;
+          weeks_count: number;
+          start_date: string;
+          end_date: string;
+        };
         evidence_log: Array<{
           timestamp: string;
           scenario_name: string;
@@ -192,7 +230,8 @@ export const api = {
           summary: string;
           is_solved: boolean;
         }>;
-      }>(`/practice/analytics/${track ? `?track=${track}` : ''}`),
+      }>(`/practice/analytics/${query}`);
+    },
   },
   challenges: {
     getChallenge: (id: string) =>
