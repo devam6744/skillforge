@@ -71,18 +71,11 @@ export default function App() {
   // GitHub-Style Activity Heatmap & Rhythm State
   const [hoveredHeatmapDay, setHoveredHeatmapDay] = useState<any | null>(null);
   const [selectedHeatmapDate, setSelectedHeatmapDate] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
 
-  const loadAnalytics = (track?: string, year?: number) => {
+  const loadAnalytics = (track?: string) => {
     setAnalyticsLoading(true);
-    const targetYear = year ?? selectedYear;
-    api.practice.getAnalytics(track || selectedTrack, targetYear)
-      .then((data) => {
-        setAnalyticsData(data);
-        if (data?.heatmap_meta?.selected_year) {
-          setSelectedYear(data.heatmap_meta.selected_year);
-        }
-      })
+    api.practice.getAnalytics(track || selectedTrack)
+      .then((data) => setAnalyticsData(data))
       .catch((err) => console.error('Failed to load analytics:', err))
       .finally(() => setAnalyticsLoading(false));
   };
@@ -2808,7 +2801,7 @@ export default function App() {
                   >
                     <div>
                       {/* Heatmap Header */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontSize: 18 }}>🟩</span>
@@ -2817,48 +2810,17 @@ export default function App() {
                             </h3>
                           </div>
                           <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4, margin: 0 }}>
-                            {analyticsData?.heatmap_meta?.selected_year || selectedYear} Annual Matrix • Daily submission density & active streak tracking
+                            Daily submission density over the last 20 weeks. Hover over any box to inspect day telemetry.
                           </p>
                         </div>
 
-                        {/* Year Filter Tabs + Cadence Badges */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                          {/* Year Selector Buttons */}
-                          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', padding: '2px 4px', borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                            {(analyticsData?.heatmap_meta?.available_years || [2026, 2025, 2024]).map((yr: number) => {
-                              const active = (analyticsData?.heatmap_meta?.selected_year || selectedYear) === yr;
-                              return (
-                                <button
-                                  key={yr}
-                                  onClick={() => {
-                                    setSelectedYear(yr);
-                                    loadAnalytics(selectedTrack, yr);
-                                  }}
-                                  style={{
-                                    padding: '4px 10px',
-                                    fontSize: 11,
-                                    fontWeight: active ? 700 : 500,
-                                    fontFamily: 'var(--font-mono)',
-                                    borderRadius: 6,
-                                    border: 'none',
-                                    background: active ? '#10b981' : 'transparent',
-                                    color: active ? '#061325' : 'var(--text-muted)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s ease',
-                                  }}
-                                >
-                                  {yr}
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* Cadence Badges */}
+                        {/* Cadence Badges */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span className="tag-badge tag-emerald" style={{ fontSize: 10 }}>
                             🔥 {analyticsData?.heatmap_meta?.current_streak ?? 7} Day Streak
                           </span>
                           <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
-                            {analyticsData?.heatmap_meta?.total_submissions ?? 124} Submissions in {analyticsData?.heatmap_meta?.selected_year || selectedYear}
+                            {analyticsData?.heatmap_meta?.total_submissions ?? 124} Submissions
                           </span>
                         </div>
                       </div>
@@ -2902,24 +2864,14 @@ export default function App() {
                                 <div style={{ height: 13, lineHeight: '13px' }}>Sun</div>
                               </div>
 
-                              {/* 53 Columns of Weeks */}
+                              {/* 20 Columns of Weeks */}
                               <div style={{ display: 'flex', gap: 3.5 }}>
                                 {weeks.map((week, wIdx) => {
-                                  // Show month label above first week transitioning into that month
+                                  // Show month label above first week of that month
+                                  const firstDay = week[0];
                                   let monthLabel = '';
-                                  if (wIdx === 0) {
-                                    const hasJan = week.some((d: any) => new Date(d.date).getMonth() === 0);
-                                    monthLabel = hasJan ? 'Jan' : new Date(week[0].date).toLocaleDateString('en-US', { month: 'short' });
-                                  } else {
-                                    const prevWeekEnd = weeks[wIdx - 1]?.[6];
-                                    const thisWeekEnd = week[week.length - 1];
-                                    if (prevWeekEnd && thisWeekEnd) {
-                                      const prevMonth = new Date(prevWeekEnd.date).getMonth();
-                                      const thisMonth = new Date(thisWeekEnd.date).getMonth();
-                                      if (prevMonth !== thisMonth) {
-                                        monthLabel = new Date(thisWeekEnd.date).toLocaleDateString('en-US', { month: 'short' });
-                                      }
-                                    }
+                                  if (firstDay && (wIdx === 0 || new Date(firstDay.date).getDate() <= 7)) {
+                                    monthLabel = new Date(firstDay.date).toLocaleDateString('en-US', { month: 'short' });
                                   }
 
                                   return (
@@ -2931,26 +2883,20 @@ export default function App() {
 
                                       {/* 7 Days in Week */}
                                       {week.map((d: any, dIdx: number) => {
-                                        const isFuture = !!d.is_future;
-                                        const isHovered = !isFuture && hoveredHeatmapDay?.date === d.date;
-                                        const isSelected = !isFuture && selectedHeatmapDate === d.date;
-                                        const style = isFuture
-                                          ? { background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.03)' }
-                                          : getLevelStyle(d.level);
+                                        const isHovered = hoveredHeatmapDay?.date === d.date;
+                                        const isSelected = selectedHeatmapDate === d.date;
+                                        const style = getLevelStyle(d.level);
 
                                         return (
                                           <div
                                             key={dIdx}
-                                            onMouseEnter={() => {
-                                              if (!isFuture) setHoveredHeatmapDay(d);
-                                            }}
+                                            onMouseEnter={() => setHoveredHeatmapDay(d)}
                                             onMouseLeave={() => {
                                               if (!selectedHeatmapDate) {
                                                 setHoveredHeatmapDay(null);
                                               }
                                             }}
                                             onClick={() => {
-                                              if (isFuture) return;
                                               const newSelected = isSelected ? null : d.date;
                                               setSelectedHeatmapDate(newSelected);
                                               setHoveredHeatmapDay(d);
@@ -2962,7 +2908,7 @@ export default function App() {
                                               width: 13,
                                               height: 13,
                                               borderRadius: 2.5,
-                                              cursor: isFuture ? 'default' : 'pointer',
+                                              cursor: 'pointer',
                                               transition: 'all 0.15s ease',
                                               transform: isHovered || isSelected ? 'scale(1.35)' : 'scale(1)',
                                               zIndex: isHovered || isSelected ? 10 : 1,
@@ -2970,7 +2916,7 @@ export default function App() {
                                               ...(isHovered ? { border: '1.5px solid #ffffff', boxShadow: '0 0 10px rgba(255, 255, 255, 0.8)' } : {}),
                                               ...(isSelected ? { border: '1.5px solid #6366f1', boxShadow: '0 0 10px rgba(99, 102, 241, 0.9)' } : {}),
                                             }}
-                                            title={isFuture ? `Upcoming: ${d.display_date}` : `${d.count} submissions on ${d.display_date}`}
+                                            title={`${d.count} submissions on ${d.display_date}`}
                                           />
                                         );
                                       })}
@@ -2997,14 +2943,12 @@ export default function App() {
                                   {activeDay.display_date}
                                 </div>
                                 <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', marginTop: 2 }}>
-                                  {activeDay.is_future
-                                    ? 'Upcoming date in the calendar year.'
-                                    : activeDay.count > 0
+                                  {activeDay.count > 0
                                     ? `${activeDay.count} Submissions • Topics: ${(activeDay.topics || []).join(', ') || 'Foundations'}`
                                     : 'No submissions recorded on this date.'}
                                 </div>
                               </div>
-                              {activeDay.count > 0 && !activeDay.is_future && (
+                              {activeDay.count > 0 && (
                                 <span className="tag-badge tag-emerald" style={{ fontSize: 10 }}>
                                   Avg Rubric: {activeDay.avg_score}%
                                 </span>
@@ -3019,7 +2963,7 @@ export default function App() {
                               ✦ Hover or click any box to inspect date, submission density, and topics practiced
                             </span>
                             <span style={{ fontSize: 11, color: 'var(--accent-cyan)' }}>
-                              {analyticsData?.heatmap_meta?.active_days ?? 38} active practice days in {analyticsData?.heatmap_meta?.selected_year || selectedYear}
+                              {analyticsData?.heatmap_meta?.active_days ?? 38} active practice days
                             </span>
                           </div>
                         );

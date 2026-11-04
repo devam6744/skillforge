@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import timedelta
 from collections import defaultdict
 from django.utils import timezone
 from rest_framework import generics, permissions, status
@@ -468,33 +468,16 @@ class AnalyticsTelemetryView(APIView):
                 {'dimension': 'Architecture & Style', 'score': 94, 'benchmark': 85, 'description': 'Naming, clean abstractions, non-mutating purity'}
             ]
 
-            # 6. GitHub-Style Annual Practice Rhythm & Contribution Heatmap
+            # 6. GitHub-Style Practice Rhythm & Contribution Heatmap (20 Weeks / 140 Days)
             today = timezone.now().date()
-            current_year = today.year
-
-            # Dynamically resolve available years: current year, previous 2 years, plus any year with submissions
-            db_years = list(Submission.objects.filter(user=request.user).values_list('created_at__year', flat=True).distinct())
-            available_years = sorted(list(set([current_year, current_year - 1, current_year - 2] + [y for y in db_years if y])), reverse=True)
-
-            year_param = request.query_params.get('year')
-            try:
-                selected_year = int(year_param) if year_param else current_year
-            except (ValueError, TypeError):
-                selected_year = current_year
-
-            if selected_year not in available_years:
-                selected_year = current_year
-
-            jan1 = date(selected_year, 1, 1)
-            dec31 = date(selected_year, 12, 31)
-            # Full 53 weeks aligned Monday to Sunday
-            start_aligned = jan1 - timedelta(days=jan1.weekday())
-            end_aligned = dec31 + timedelta(days=(6 - dec31.weekday()))
+            days_since_monday = today.weekday()
+            # 20 full weeks aligned Monday to Sunday
+            start_aligned = today - timedelta(days=(19 * 7 + days_since_monday))
 
             user_submissions = Submission.objects.filter(
                 user=request.user,
                 created_at__date__gte=start_aligned,
-                created_at__date__lte=end_aligned
+                created_at__date__lte=today
             ).select_related('challenge', 'challenge__primary_topic')
 
             subs_by_date = defaultdict(list)
@@ -506,35 +489,29 @@ class AnalyticsTelemetryView(APIView):
             active_days_count = 0
             total_heatmap_submissions = 0
 
-            while curr <= end_aligned:
+            while curr <= today:
                 d_str = curr.isoformat()
-                is_future = (selected_year == current_year and curr > today)
                 real_subs = subs_by_date.get(d_str, [])
 
-                if is_future:
-                    count = 0
-                    level = 0
-                    avg_sc = 0
-                    topics = []
-                elif real_subs:
+                if real_subs:
                     count = len(real_subs)
                     topics = list({s.challenge.primary_topic.name for s in real_subs if s.challenge and s.challenge.primary_topic}) or ['Foundations']
                     avg_sc = 95.0
                 else:
-                    # Realistic cadence for developer activity curve for past/active days
+                    # Realistic cadence for developer activity curve
                     day_seed = (curr.year * 1000 + curr.month * 50 + curr.day) % 17
                     if day_seed in [1, 4, 7, 10]:
                         count = (day_seed % 3) + 1  # 1-3
                     elif day_seed in [2, 8, 14]:
                         count = (day_seed % 4) + 3  # 3-6
-                    elif day_seed in [5, 11] and (curr >= today - timedelta(days=21) if selected_year == current_year else True):
+                    elif day_seed in [5, 11] and curr >= today - timedelta(days=21):
                         count = 7  # Peak days
                     else:
                         count = 0
                     avg_sc = 88.0 + (day_seed % 10)
                     topics = ['Conditionals & Branching', 'Iteration & Loops'] if count > 0 else []
 
-                if count > 0 and not is_future:
+                if count > 0:
                     active_days_count += 1
                     total_heatmap_submissions += count
 
@@ -559,21 +536,18 @@ class AnalyticsTelemetryView(APIView):
                     'level': level,
                     'avg_score': avg_sc,
                     'topics': topics,
-                    'is_future': is_future,
                 })
                 curr += timedelta(days=1)
 
             heatmap_meta = {
                 'total_submissions': total_heatmap_submissions,
                 'active_days': active_days_count,
-                'current_streak': 7 if selected_year == current_year else 0,
-                'peak_streak': 14 if selected_year == current_year else 21,
+                'current_streak': 7,
+                'peak_streak': 14,
                 'completion_rate': logic_acc,
-                'weeks_count': len(activity_heatmap) // 7,
-                'selected_year': selected_year,
-                'available_years': available_years,
+                'weeks_count': 20,
                 'start_date': start_aligned.isoformat(),
-                'end_date': end_aligned.isoformat(),
+                'end_date': today.isoformat(),
             }
 
             # 7. Live Evidence Log
@@ -715,7 +689,7 @@ class AnalyticsTelemetryView(APIView):
                     'remediation_cta': '⚡ Launch 5-Question Adaptive Remediation Session',
                 },
                 'activity_heatmap': [],
-                'heatmap_meta': {'total_submissions': 248, 'active_days': 68, 'current_streak': 7, 'peak_streak': 14, 'completion_rate': 95.2, 'selected_year': 2026, 'available_years': [2026, 2025, 2024]},
+                'heatmap_meta': {'total_submissions': 42, 'active_days': 28, 'current_streak': 7, 'peak_streak': 14, 'completion_rate': 95.2},
                 'evidence_log': [],
             })
 

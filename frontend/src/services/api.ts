@@ -1,12 +1,4 @@
-import type {
-  User,
-  AuthResponse,
-  ProgrammingLanguage,
-  Topic,
-  PracticeSession,
-  ChallengeDetail,
-  SessionChallengeData,
-} from '../types';
+import type { User, AuthResponse } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
@@ -92,15 +84,15 @@ export const api = {
       }),
   },
   catalog: {
-    getLanguages: () => request<ProgrammingLanguage[]>('/catalog/languages/'),
+    getLanguages: () => request<import('../types').ProgrammingLanguage[]>('/catalog/languages/'),
     getTopics: (languageSlug: string) =>
-      request<Topic[]>(`/catalog/languages/${languageSlug}/topics/`),
+      request<import('../types').Topic[]>(`/catalog/languages/${languageSlug}/topics/`),
   },
   practice: {
     getActiveSession: () =>
-      request<{ active_session: PracticeSession | null }>('/practice/sessions/active/'),
+      request<{ active_session: import('../types').PracticeSession | null }>('/practice/sessions/active/'),
     listSessions: () =>
-      request<{ count: number; results: PracticeSession[] } | PracticeSession[]>('/practice/sessions/'),
+      request<{ count: number; results: import('../types').PracticeSession[] } | import('../types').PracticeSession[]>('/practice/sessions/'),
     createSession: (payload: {
       language_slug: string;
       topic_slug?: string | null;
@@ -109,28 +101,28 @@ export const api = {
       practice_mode: 'CODING' | 'DEBUG';
       requested_question_count: number;
     }) =>
-      request<PracticeSession>('/practice/sessions/', {
+      request<import('../types').PracticeSession>('/practice/sessions/', {
         method: 'POST',
         body: JSON.stringify(payload),
       }),
     getSession: (id: string) =>
-      request<PracticeSession>(`/practice/sessions/${id}/`),
+      request<import('../types').PracticeSession>(`/practice/sessions/${id}/`),
     abandonSession: (id: string) =>
-      request<PracticeSession>(`/practice/sessions/${id}/abandon/`, {
+      request<import('../types').PracticeSession>(`/practice/sessions/${id}/abandon/`, {
         method: 'POST',
       }),
     completeSession: (id: string) =>
-      request<PracticeSession>(`/practice/sessions/${id}/complete/`, {
+      request<import('../types').PracticeSession>(`/practice/sessions/${id}/complete/`, {
         method: 'POST',
       }),
     getCurrentChallenge: (sessionId: string) =>
-      request<SessionChallengeData>(`/practice/sessions/${sessionId}/current-challenge/`),
+      request<import('../types').SessionChallengeData>(`/practice/sessions/${sessionId}/current-challenge/`),
     getNextChallenge: (sessionId: string) =>
-      request<SessionChallengeData>(`/practice/sessions/${sessionId}/next-challenge/`, {
+      request<import('../types').SessionChallengeData>(`/practice/sessions/${sessionId}/next-challenge/`, {
         method: 'POST',
       }),
     skipChallenge: (sessionId: string) =>
-      request<SessionChallengeData>(`/practice/sessions/${sessionId}/skip-challenge/`, {
+      request<import('../types').SessionChallengeData>(`/practice/sessions/${sessionId}/skip-challenge/`, {
         method: 'POST',
       }),
     submitCode: (sessionId: string, challengeId: string, sourceCode: string) =>
@@ -151,12 +143,8 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ challenge_id: challengeId, source_code: sourceCode }),
       }),
-    getAnalytics: (track?: string, year?: number | string) => {
-      const params = new URLSearchParams();
-      if (track) params.append('track', track);
-      if (year) params.append('year', String(year));
-      const queryString = params.toString() ? `?${params.toString()}` : '';
-      return request<{
+    getAnalytics: (track?: string) =>
+      request<{
         kpis: {
           global_rubric_score: number;
           trend_percentage: string;
@@ -194,28 +182,6 @@ export const api = {
           target_topic_slug: string;
           remediation_cta: string;
         };
-        activity_heatmap: Array<{
-          date: string;
-          display_date: string;
-          day_of_week: number;
-          count: number;
-          level: number;
-          avg_score: number;
-          topics: string[];
-          is_future?: boolean;
-        }>;
-        heatmap_meta: {
-          total_submissions: number;
-          active_days: number;
-          current_streak: number;
-          peak_streak: number;
-          completion_rate: number;
-          weeks_count: number;
-          selected_year: number;
-          available_years: number[];
-          start_date: string;
-          end_date: string;
-        };
         evidence_log: Array<{
           timestamp: string;
           scenario_name: string;
@@ -226,12 +192,11 @@ export const api = {
           summary: string;
           is_solved: boolean;
         }>;
-      }>(`/practice/analytics/${queryString}`);
-    },
+      }>(`/practice/analytics/${track ? `?track=${track}` : ''}`),
   },
   challenges: {
     getChallenge: (id: string) =>
-      request<ChallengeDetail>(`/challenges/${id}/`),
+      request<import('../types').ChallengeDetail>(`/challenges/${id}/`),
     submitCode: (challengeId?: string, sourceCode: string = '', languageSlug?: string) =>
       request<{
         submission_id: string;
