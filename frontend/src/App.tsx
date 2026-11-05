@@ -446,31 +446,6 @@ export default function App() {
     }
   };
 
-  // 1-Click Instant Demo Login (Zero friction for reviewers and visitors)
-  const handleDemoLogin = async () => {
-    setAuthLoading(true);
-    setAuthError(null);
-    try {
-      let res;
-      try {
-        res = await api.auth.login('developer@skillforge.io', 'DemoPass123!');
-      } catch {
-        res = await api.auth.register(
-          'developer@skillforge.io',
-          'DemoPass123!',
-          'DemoPass123!',
-          'SkillForge Developer'
-        );
-      }
-      setCurrentUser(res.user);
-      window.location.hash = '#/workspace';
-      closeAuth();
-    } catch (err: any) {
-      setAuthError(err.message || 'Instant demo login encountered an issue.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -1236,7 +1211,7 @@ export default function App() {
                         Start Practicing for Free
                       </h2>
                       <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-                        No LeetCode DSA boilerplate. Solve real-world scenario challenges evaluated live by Gemini AI. Configure your preferences below to launch your session.
+                        No LeetCode DSA boilerplate. Solve real-world scenario challenges evaluated live with surgical invariant analysis. Configure your preferences below to launch your session.
                       </p>
                     </div>
 
@@ -1434,7 +1409,7 @@ export default function App() {
                       {isCreatingSession ? (
                         <>
                           <div className="pulsing-emerald-dot" style={{ width: 8, height: 8 }}></div>
-                          <span>Generating 5 AI Challenges with Gemini...</span>
+                          <span>Synthesizing 5 Practice Challenges...</span>
                         </>
                       ) : (
                         <>
@@ -1452,7 +1427,7 @@ export default function App() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
                         <div>✓ <strong>100% Real-World Scenarios:</strong> University-style foundational programming without DSA gimmicks.</div>
                         <div>✓ <strong>Instant Batch Generation:</strong> 5 questions created in 1 AI call with zero wait between problems.</div>
-                        <div>✓ <strong>Live Gemini Evaluation:</strong> Rubric scoring, edge cases & logic analysis without code sandboxes.</div>
+                        <div>✓ <strong>Live AI Evaluation:</strong> Rubric scoring, edge cases & logic analysis without code sandboxes.</div>
                       </div>
                     </div>
                   </div>
@@ -1485,7 +1460,7 @@ export default function App() {
                         <span className="tag-badge tag-indigo">{selectedTrack.toUpperCase()} TRACK</span>
                         <span className="tag-badge tag-emerald">{difficulty}</span>
                         <span className={`tag-badge ${origin === 'AI_GENERATED' ? 'tag-cyan' : 'tag-indigo'}`} style={{ fontSize: 9 }}>
-                          {origin === 'AI_GENERATED' ? '✦ GEMINI 2.5' : '✦ FOUNDATION'}
+                          {origin === 'AI_GENERATED' ? '✦ AI ADAPTIVE' : '✦ FOUNDATION'}
                         </span>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)', marginLeft: 'auto' }}>
                           {topic}
@@ -1530,7 +1505,7 @@ export default function App() {
                             <li key={i}>{c.replace(/^-\s*/, '')}</li>
                           ))}
                           <li style={{ color: 'var(--accent-cyan)' }}>
-                            Zero Sandbox Execution: Evaluated as untrusted text against structured Gemini 2.5 rubric.
+                            Zero Sandbox Execution: Evaluated as untrusted text against verified invariant rubrics.
                           </li>
                         </ul>
                       </div>
@@ -1578,7 +1553,7 @@ export default function App() {
                 })()}
               </div>
 
-              {/* Right Column: Code Editor & Gemini AI Review */}
+              {/* Right Column: Code Editor & AI Review */}
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-terminal)', overflow: 'hidden' }}>
                 {/* Editor Header Bar */}
                 <div
@@ -1604,7 +1579,7 @@ export default function App() {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                     <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
-                      Gemini 2.5 Rubric Active
+                      AI Invariant Rubric Active
                     </span>
                     {activeSession && (
                       <button
@@ -1678,7 +1653,7 @@ export default function App() {
                       </div>
                       <div style={{ padding: '14px 16px', borderRadius: 8, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
                         <div style={{ fontSize: 16, marginBottom: 6 }}>⚡</div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>Gemini Evaluation</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>AI Rubric Evaluation</div>
                         <div style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.5 }}>Deep rubric evaluation grading edge cases & logical correctness.</div>
                       </div>
                       <div style={{ padding: '14px 16px', borderRadius: 8, background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
@@ -2048,7 +2023,7 @@ export default function App() {
 
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: 14 }}>
                             <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
-                              Gemini Evaluated
+                              AI Evaluated
                             </span>
                             <button
                               onClick={() => handleStartPracticeSession(t.slug, 'TOPIC')}
@@ -2123,7 +2098,7 @@ export default function App() {
                       <span>💾 {sessionHistory.length} Sessions Logged</span>
                     </div>
 
-                    {/* Gemini Live Rubric Sync Pill */}
+                    {/* Live Rubric Sync Pill */}
                     <div
                       style={{
                         display: 'inline-flex',
@@ -2141,7 +2116,7 @@ export default function App() {
                       }}
                     >
                       <span className="pulsing-emerald-dot" style={{ width: 7, height: 7 }}></span>
-                      <span>⚡ GEMINI 2.5 LIVE RUBRIC SYNCED</span>
+                      <span>⚡ LIVE INVARIANT RUBRIC SYNCED</span>
                     </div>
 
                     <button
@@ -3768,7 +3743,7 @@ export default function App() {
                 </div>
 
                 {/* ========================================================================= */}
-                {/* 6. GEMINI 2.5 ADAPTIVE DIAGNOSTIC & REMEDIATION LAUNCHER                 */}
+                {/* 6. ADAPTIVE DIAGNOSTIC & REMEDIATION LAUNCHER                 */}
                 {/* ========================================================================= */}
                 <div
                   className="forge-card"
@@ -3786,7 +3761,7 @@ export default function App() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 20 }}>⚡</span>
                       <h3 style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                        {analyticsData?.diagnostic_insight?.title || 'Gemini 2.5 Adaptive Remediation'}
+                        {analyticsData?.diagnostic_insight?.title || 'Adaptive Skill Remediation'}
                       </h3>
                     </div>
                     <span className="tag-badge tag-emerald" style={{ fontSize: 9 }}>CLOSED-LOOP AI FEEDBACK</span>
@@ -4038,9 +4013,6 @@ export default function App() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={handleDemoLogin} className="btn-secondary-glass" style={{ padding: '9px 16px', fontSize: 13, color: 'var(--accent-cyan)' }}>
-            ⚡ 1-Click Demo Access
-          </button>
           <button onClick={() => openAuth('signin')} className="btn-secondary-glass" style={{ padding: '9px 18px', fontSize: 13 }}>
             Sign In
           </button>
@@ -4055,7 +4027,7 @@ export default function App() {
         <div style={{ textAlign: 'center', maxWidth: 860, margin: '0 auto 40px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
             <span className="tag-badge tag-indigo">
-              ✦ GOOGLE GEMINI 2.5 REVIEW RUBRIC
+              ✦ VERIFIED AI INVARIANT RUBRIC
             </span>
             <span className="tag-badge tag-emerald">
               100% FREE FOR DEVELOPERS
@@ -4087,15 +4059,15 @@ export default function App() {
               margin: '0 auto 32px',
             }}
           >
-            Practice Python, C++, Java, JavaScript, and C with intelligent problem synthesis, surgical Gemini code analysis, and evidence-based adaptive skill calibration.
+            Practice Python, C++, Java, JavaScript, and C with intelligent problem synthesis, surgical invariant code analysis, and evidence-based adaptive skill calibration.
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <button onClick={handleDemoLogin} className="btn-primary-gradient" style={{ fontSize: 15, padding: '15px 32px' }}>
-              ⚡ 1-Click Instant Demo Login
-            </button>
-            <button onClick={() => openAuth('signup')} className="btn-secondary-glass" style={{ fontSize: 15, padding: '15px 28px' }}>
+            <button onClick={() => openAuth('signup')} className="btn-primary-gradient" style={{ fontSize: 15, padding: '15px 32px' }}>
               Create Free Account →
+            </button>
+            <button onClick={() => openAuth('signin')} className="btn-secondary-glass" style={{ fontSize: 15, padding: '15px 28px' }}>
+              Sign In to SkillForge
             </button>
           </div>
         </div>
@@ -4170,7 +4142,7 @@ export default function App() {
             <div style={{ padding: '28px', background: 'rgba(11, 17, 38, 0.7)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <span className="tag-badge tag-emerald">✦ GEMINI RUBRIC EVALUATION</span>
+                  <span className="tag-badge tag-emerald">✦ AUTOMATED INVARIANT EVALUATION</span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-emerald)', fontWeight: 700 }}>
                     Confidence 98.4%
                   </span>
@@ -4269,13 +4241,13 @@ export default function App() {
         <div style={{ display: 'flex', gap: 16 }}>
           <span>PostgreSQL (Supabase)</span>
           <span>•</span>
-          <span>Google Gemini 2.5</span>
+          <span>SkillForge AI Engine</span>
           <span>•</span>
           <span>Django REST Framework</span>
         </div>
       </footer>
 
-      {/* SIMPLE AUTH MODAL (Sign In / Register / 1-Click Demo) */}
+      {/* AUTH MODAL (Sign In / Register) */}
       {authModalOpen && (
         <div className="modal-overlay" onClick={closeAuth}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -4296,32 +4268,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Instant Demo Access Button */}
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                disabled={authLoading}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: 10,
-                  background: 'rgba(99, 102, 241, 0.15)',
-                  border: '1px solid var(--border-active)',
-                  color: 'var(--accent-cyan)',
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 10,
-                  cursor: 'pointer',
-                  marginBottom: 18,
-                  transition: 'all 0.2s',
-                }}
-              >
-                <span>⚡</span> 1-Click Instant Demo Access (No Password Needed)
-              </button>
 
               {/* Tab Switcher */}
               <div style={{ display: 'flex', background: 'rgba(8, 12, 28, 0.8)', padding: 4, borderRadius: 8, marginBottom: 20 }}>

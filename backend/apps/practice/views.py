@@ -502,7 +502,7 @@ class AnalyticsTelemetryView(APIView):
                     {'dimension': 'Architecture & Style', 'score': 0, 'benchmark': 85, 'description': 'Naming, clean abstractions, non-mutating purity'},
                 ],
                 'diagnostic_insight': {
-                    'title': 'Gemini 2.5 Diagnostic Calibration',
+                    'title': 'AI Diagnostic Calibration',
                     'analysis': f"Welcome to SkillForge! You haven't completed any practice challenges yet. Solve your first scenario in {language_name} to calibrate your continuous rubric curve.",
                     'radar_metrics': {
                         'invariant_soundness': 0,
@@ -745,7 +745,7 @@ class AnalyticsTelemetryView(APIView):
                     'score': f"{e.score}/100",
                     'complexity': "O(1) execution",
                     'proofs': [f"#{c.replace(' ', '')}" for c in (e.concepts_demonstrated or [])[:2]] or ['#VerifiedInvariant', '#MemorySafety'],
-                    'summary': e.summary or 'Verified solution against Gemini invariants.',
+                    'summary': e.summary or 'Verified solution against AI invariants.',
                     'is_solved': (e.score or 0) >= 70,
                 })
 
@@ -770,7 +770,7 @@ class AnalyticsTelemetryView(APIView):
             'trajectory_series': trajectory_series,
             'rubric_dimensions': rubric_dimensions,
             'diagnostic_insight': {
-                'title': 'Gemini 2.5 Adaptive Insight',
+                'title': 'Adaptive Competency Insight',
                 'analysis': f"Proficiency trajectory active across {language_name} curriculum. Target competency focus: {diagnostic_target}.",
                 'radar_metrics': {
                     'invariant_soundness': rubric_logic,
