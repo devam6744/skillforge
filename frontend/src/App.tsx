@@ -34,6 +34,7 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reviewResult, setReviewResult] = useState<any | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   // Onboarding state
   const [onboardingOpen, setOnboardingOpen] = useState(false);
@@ -183,37 +184,6 @@ export default function App() {
         setTimeout(() => setNotification(null), 6000);
       } else {
         handleNetworkError('Challenge Load Failed', 'Could not load next challenge.', err);
-      }
-    } finally {
-      setIsLoadingChallenge(false);
-    }
-  };
-
-  const handleSkipChallenge = async () => {
-    if (!activeSession) return;
-    setIsLoadingChallenge(true);
-    try {
-      const skipData = await api.practice.skipChallenge(activeSession.id);
-      if (skipData.session_finished) {
-        setNotification('🎉 Session finished! All requested challenges completed.');
-        setTimeout(() => setNotification(null), 5000);
-        await handleCompleteSession();
-      } else {
-        setCurrentSessionChallenge(skipData);
-        if (skipData.challenge?.starter_code) {
-          setCurrentCode(skipData.challenge.starter_code);
-        }
-        setReviewResult(null);
-        setShowHints(false);
-        setNotification(`Skipped to Problem ${skipData.question_order} of ${skipData.total_questions}`);
-        setTimeout(() => setNotification(null), 3500);
-      }
-    } catch (err: any) {
-      if (err.details?.error === 'INTERNET_REQUIRED' || err.message?.includes('internet') || err.message?.includes('Internet')) {
-        setNotification('⚠️ Internet connection required: Live AI generation requires an active internet connection.');
-        setTimeout(() => setNotification(null), 6000);
-      } else {
-        handleNetworkError('Skip Request Failed', 'Could not skip challenge.', err);
       }
     } finally {
       setIsLoadingChallenge(false);
@@ -1099,46 +1069,7 @@ export default function App() {
                         </button>
                       </div>
 
-                      <button
-                        onClick={handleSkipChallenge}
-                        disabled={isLoadingChallenge}
-                        style={{
-                          padding: '5px 12px',
-                          borderRadius: 6,
-                          border: '1px solid rgba(245, 158, 11, 0.35)',
-                          background: 'rgba(245, 158, 11, 0.08)',
-                          color: '#fbbf24',
-                          fontSize: 12,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                        }}
-                        title="Skip this question and move to next in the set"
-                      >
-                        <span>⏩</span> Skip
-                      </button>
 
-                      <button
-                        onClick={handleNextChallenge}
-                        disabled={isLoadingChallenge}
-                        className="btn-secondary-glass"
-                        style={{
-                          padding: '5px 12px',
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: '#c0c1ff',
-                          borderColor: 'rgba(99, 102, 241, 0.4)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                        }}
-                        title="Advance to next challenge in session"
-                      >
-                        <span>⏭</span>
-                        {isLoadingChallenge ? 'Loading...' : currentSessionChallenge?.is_last_question ? 'Finish Session' : 'Next Question'}
-                      </button>
 
                       <button
                         onClick={() => setCurrentCode(currentSessionChallenge?.challenge.starter_code || '')}
@@ -1583,15 +1514,33 @@ export default function App() {
                     </span>
                     {activeSession && (
                       <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(currentCode);
-                          setNotification('Copied code to clipboard');
-                          setTimeout(() => setNotification(null), 2500);
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(currentCode);
+                            setCopiedCode(true);
+                            setTimeout(() => setCopiedCode(false), 2200);
+                          } catch (e) {
+                            console.error('Clipboard copy failed:', e);
+                          }
                         }}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                        title="Copy Code"
+                        style={{
+                          background: copiedCode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+                          border: `1px solid ${copiedCode ? 'rgba(16, 185, 129, 0.5)' : 'rgba(255, 255, 255, 0.1)'}`,
+                          color: copiedCode ? '#34d399' : 'var(--text-dim)',
+                          fontSize: 12,
+                          fontWeight: copiedCode ? 600 : 400,
+                          padding: '3px 9px',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          transition: 'all 0.2s ease',
+                        }}
+                        title={copiedCode ? 'Copied!' : 'Copy code to clipboard'}
                       >
-                        <span>📋</span> Copy
+                        <span>{copiedCode ? '✓' : '📋'}</span>
+                        <span>{copiedCode ? 'Copied!' : 'Copy'}</span>
                       </button>
                     )}
                   </div>
@@ -1699,20 +1648,47 @@ export default function App() {
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        {reviewResult.isSolved && activeSession && (
+                        {reviewResult.isSolved ? (
+                          <>
+                            <button
+                              onClick={() => setReviewResult(null)}
+                              className="btn-secondary-glass"
+                              style={{ padding: '5px 12px', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}
+                              title="Refine and retry your solution"
+                            >
+                              <span>🔄</span> Retry
+                            </button>
+                            {activeSession && (
+                              <button
+                                onClick={handleNextChallenge}
+                                disabled={isLoadingChallenge}
+                                className="btn-primary-gradient"
+                                style={{ padding: '5px 14px', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+                              >
+                                {isLoadingChallenge
+                                  ? 'Loading...'
+                                  : (currentSessionChallenge?.is_last_question || (currentSessionChallenge && currentSessionChallenge.question_order >= currentSessionChallenge.total_questions))
+                                    ? 'Finish Session 🏁'
+                                    : 'Next Question ⏭'}
+                              </button>
+                            )}
+                          </>
+                        ) : (
                           <button
-                            onClick={handleNextChallenge}
-                            className="btn-primary-gradient"
-                            style={{ padding: '4px 12px', fontSize: 12, fontWeight: 700 }}
+                            onClick={() => setReviewResult(null)}
+                            className="btn-secondary-glass"
+                            style={{ padding: '5px 12px', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fca5a5' }}
+                            title="Edit code to address rubric issues and retry"
                           >
-                            Next Problem ⏭
+                            <span>🔄</span> Retry Solution
                           </button>
                         )}
                         <button
                           onClick={() => setReviewResult(null)}
-                          style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 14 }}
+                          style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 14, marginLeft: 4 }}
+                          title="Dismiss Review"
                         >
-                          ✕ Close Review
+                          ✕
                         </button>
                       </div>
                     </div>
@@ -2132,23 +2108,7 @@ export default function App() {
                       <span>↻</span> {analyticsLoading ? 'Refreshing...' : 'Refresh'}
                     </button>
 
-                    <button
-                      onClick={() => {
-                        const blob = new Blob([JSON.stringify(analyticsData || {}, null, 2)], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `skillforge-telemetry-${selectedTrack.toLowerCase()}.json`;
-                        a.click();
-                        setNotification('Exported Telemetry JSON.');
-                        setTimeout(() => setNotification(null), 3000);
-                      }}
-                      className="btn-secondary-glass"
-                      style={{ padding: '6px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}
-                      title="Download Telemetry JSON"
-                    >
-                      <span>📥</span> Export JSON
-                    </button>
+
                   </div>
                 </div>
 

@@ -178,6 +178,21 @@ class SessionNextChallengeView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Advance past current active challenge so next-challenge always moves forward
+        active_sc = session.session_challenges.filter(
+            status=SessionChallenge.Status.ACTIVE
+        ).first()
+
+        if active_sc:
+            has_passed = Submission.objects.filter(
+                session=session,
+                challenge=active_sc.challenge,
+                evaluation__score__gte=70
+            ).exists()
+            active_sc.status = SessionChallenge.Status.SOLVED if has_passed else SessionChallenge.Status.SKIPPED
+            active_sc.completed_at = timezone.now()
+            active_sc.save(update_fields=['status', 'completed_at'])
+
         try:
             session_challenge, is_finished, message = ChallengeDeliveryService.get_or_create_next_challenge(session)
         except AIConnectionError as exc:
@@ -276,6 +291,14 @@ class SessionSubmitView(APIView):
 
         is_session_finished = False
         if eval_result.score >= 70:
+            SessionChallenge.objects.filter(
+                session=session,
+                challenge=challenge,
+                status=SessionChallenge.Status.ACTIVE
+            ).update(
+                status=SessionChallenge.Status.SOLVED,
+                completed_at=timezone.now()
+            )
             solved_count = session.session_challenges.filter(status=SessionChallenge.Status.SOLVED).count()
             if solved_count >= session.requested_question_count:
                 session.status = PracticeSession.Status.COMPLETED
