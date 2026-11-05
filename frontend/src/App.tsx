@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from './services/api';
 import type { User, ProgrammingLanguage, PracticeSession, SessionChallengeData } from './types';
 
@@ -35,6 +35,11 @@ export default function App() {
   const [reviewResult, setReviewResult] = useState<any | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
+
+  // Smart Code Editor refs & cursor state
+  const editorTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorGutterRef = useRef<HTMLDivElement>(null);
+  const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
 
   // Onboarding state
   const [onboardingOpen, setOnboardingOpen] = useState(false);
@@ -187,6 +192,290 @@ export default function App() {
       }
     } finally {
       setIsLoadingChallenge(false);
+    }
+  };
+
+  const handleSkipChallenge = async () => {
+    if (!activeSession) return;
+    setIsLoadingChallenge(true);
+    try {
+      const skipData = await api.practice.skipChallenge(activeSession.id);
+      if (skipData.session_finished) {
+        setNotification('🎉 Session finished! All requested challenges completed.');
+        setTimeout(() => setNotification(null), 5000);
+        await handleCompleteSession();
+      } else {
+        setCurrentSessionChallenge(skipData);
+        if (skipData.challenge?.starter_code) {
+          setCurrentCode(skipData.challenge.starter_code);
+        }
+        setReviewResult(null);
+        setShowHints(false);
+        setNotification(`Skipped to Problem ${skipData.question_order} of ${skipData.total_questions}`);
+        setTimeout(() => setNotification(null), 3500);
+      }
+    } catch (err: any) {
+      if (err.details?.error === 'INTERNET_REQUIRED' || err.message?.includes('internet') || err.message?.includes('Internet')) {
+        setNotification('⚠️ Internet connection required: Live AI generation requires an active internet connection.');
+        setTimeout(() => setNotification(null), 6000);
+      } else {
+        handleNetworkError('Skip Request Failed', 'Could not skip challenge.', err);
+      }
+    } finally {
+      setIsLoadingChallenge(false);
+    }
+  };
+
+  // Smart Code Editor Helpers (Auto-Indent, Bracket/Quote Pairs, Gutter Scroll)
+  const updateCursorPos = () => {
+    const el = editorTextareaRef.current;
+    if (!el) return;
+    const pos = el.selectionStart;
+    const textBefore = el.value.substring(0, pos);
+    const lines = textBefore.split('\n');
+    const line = lines.length;
+    const col = lines[lines.length - 1].length + 1;
+    setCursorPos({ line, col });
+  };
+
+  const handleEditorScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (editorGutterRef.current) {
+      editorGutterRef.current.scrollTop = e.currentTarget.scrollTop;
+    }
+  };
+
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const el = editorTextareaRef.current;
+    if (!el) return;
+
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const val = el.value;
+
+    // 1. TAB & SHIFT+TAB HANDLING (4-space indent / unindent)
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        // Shift+Tab: Unindent
+        const lastNewline = val.lastIndexOf('\n', start - 1);
+        const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+        const nextNewline = val.indexOf('\n', end);
+        const lineEnd = nextNewline === -1 ? val.length : nextNewline;
+        const block = val.substring(lineStart, lineEnd);
+        const lines = block.split('\n');
+        let removedFromFirst = 0;
+        let totalRemoved = 0;
+
+        const unindented = lines.map((line, idx) => {
+          let rem = 0;
+          if (line.startsWith('    ')) {
+            rem = 4;
+          } else if (line.startsWith('\t')) {
+            rem = 1;
+          } else {
+            const m = line.match(/^ +/);
+            if (m) rem = Math.min(m[0].length, 4);
+          }
+          if (idx === 0) removedFromFirst = rem;
+          totalRemoved += rem;
+          return line.substring(rem);
+        });
+
+        const newBlock = unindented.join('\n');
+        const updated = val.substring(0, lineStart) + newBlock + val.substring(lineEnd);
+        setCurrentCode(updated);
+        requestAnimationFrame(() => {
+          el.selectionStart = Math.max(lineStart, start - removedFromFirst);
+          el.selectionEnd = Math.max(lineStart, end - totalRemoved);
+          updateCursorPos();
+        });
+      } else {
+        // Normal Tab
+        if (start !== end && val.substring(start, end).includes('\n')) {
+          // Multi-line selection: indent all selected lines
+          const lastNewline = val.lastIndexOf('\n', start - 1);
+          const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+          const nextNewline = val.indexOf('\n', end);
+          const lineEnd = nextNewline === -1 ? val.length : nextNewline;
+          const block = val.substring(lineStart, lineEnd);
+          const lines = block.split('\n');
+          const indented = lines.map((l) => '    ' + l).join('\n');
+          const updated = val.substring(0, lineStart) + indented + val.substring(lineEnd);
+          setCurrentCode(updated);
+          requestAnimationFrame(() => {
+            el.selectionStart = start + 4;
+            el.selectionEnd = end + lines.length * 4;
+            updateCursorPos();
+          });
+        } else {
+          // Single cursor or within one line: insert 4 spaces
+          const updated = val.substring(0, start) + '    ' + val.substring(end);
+          setCurrentCode(updated);
+          requestAnimationFrame(() => {
+            el.selectionStart = start + 4;
+            el.selectionEnd = start + 4;
+            updateCursorPos();
+          });
+        }
+      }
+      return;
+    }
+
+    // 2. ENTER KEY (SMART AUTO-INDENTATION)
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const lastNewline = val.lastIndexOf('\n', start - 1);
+      const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+      const currentLineToCursor = val.substring(lineStart, start);
+      const indentMatch = currentLineToCursor.match(/^[ \t]*/);
+      const currentIndent = indentMatch ? indentMatch[0] : '';
+
+      const charBefore = start > 0 ? val[start - 1] : '';
+      const charAfter = start < val.length ? val[start] : '';
+
+      const trimmedBefore = currentLineToCursor.trim();
+      const shouldExtraIndent =
+        trimmedBefore.endsWith(':') ||
+        trimmedBefore.endsWith('{') ||
+        trimmedBefore.endsWith('(') ||
+        trimmedBefore.endsWith('[');
+
+      const extraIndent = '    ';
+
+      // Check if cursor is between matching pair: {|} or (|) or [|]
+      if (
+        (charBefore === '{' && charAfter === '}') ||
+        (charBefore === '(' && charAfter === ')') ||
+        (charBefore === '[' && charAfter === ']')
+      ) {
+        const insertion = '\n' + currentIndent + extraIndent + '\n' + currentIndent;
+        const updated = val.substring(0, start) + insertion + val.substring(end);
+        setCurrentCode(updated);
+        requestAnimationFrame(() => {
+          const targetPos = start + 1 + currentIndent.length + extraIndent.length;
+          el.selectionStart = targetPos;
+          el.selectionEnd = targetPos;
+          updateCursorPos();
+        });
+        return;
+      }
+
+      // Standard auto-indent (preserves indent level, and adds 4 spaces after :, {, (, [)
+      const nextIndent = shouldExtraIndent ? currentIndent + extraIndent : currentIndent;
+      const insertion = '\n' + nextIndent;
+      const updated = val.substring(0, start) + insertion + val.substring(end);
+      setCurrentCode(updated);
+      requestAnimationFrame(() => {
+        const targetPos = start + insertion.length;
+        el.selectionStart = targetPos;
+        el.selectionEnd = targetPos;
+        updateCursorPos();
+      });
+      return;
+    }
+
+    // 3. AUTO-CLOSING BRACKETS & QUOTES: (, [, {, ", ', `
+    const PAIRS: Record<string, string> = {
+      '(': ')',
+      '[': ']',
+      '{': '}',
+      '"': '"',
+      "'": "'",
+      '`': '`',
+    };
+
+    if (PAIRS[e.key]) {
+      const openChar = e.key;
+      const closeChar = PAIRS[openChar];
+
+      // If text is selected, wrap selected text
+      if (start !== end) {
+        e.preventDefault();
+        const selected = val.substring(start, end);
+        const wrapped = openChar + selected + closeChar;
+        const updated = val.substring(0, start) + wrapped + val.substring(end);
+        setCurrentCode(updated);
+        requestAnimationFrame(() => {
+          el.selectionStart = start + 1;
+          el.selectionEnd = end + 1;
+          updateCursorPos();
+        });
+        return;
+      }
+
+      // Check quote step-over or apostrophe in contractions
+      if (openChar === "'" || openChar === '"' || openChar === '`') {
+        const prevChar = start > 0 ? val[start - 1] : '';
+        const nextChar = start < val.length ? val[start] : '';
+
+        // Step over closing quote if next character is already the same quote
+        if (nextChar === openChar) {
+          e.preventDefault();
+          requestAnimationFrame(() => {
+            el.selectionStart = start + 1;
+            el.selectionEnd = start + 1;
+            updateCursorPos();
+          });
+          return;
+        }
+
+        // In Python/code, if preceded by alphanumeric word char, let it type a normal apostrophe (e.g. don't)
+        if (openChar === "'" && /[a-zA-Z0-9_]/.test(prevChar)) {
+          return; // Allow normal typing without closing pair
+        }
+      }
+
+      // Insert matching pair and place cursor in middle
+      e.preventDefault();
+      const pair = openChar + closeChar;
+      const updated = val.substring(0, start) + pair + val.substring(end);
+      setCurrentCode(updated);
+      requestAnimationFrame(() => {
+        el.selectionStart = start + 1;
+        el.selectionEnd = start + 1;
+        updateCursorPos();
+      });
+      return;
+    }
+
+    // 4. STEP OVER CLOSING BRACKETS: ), ], }
+    if (e.key === ')' || e.key === ']' || e.key === '}') {
+      if (start === end && start < val.length && val[start] === e.key) {
+        e.preventDefault();
+        requestAnimationFrame(() => {
+          el.selectionStart = start + 1;
+          el.selectionEnd = start + 1;
+          updateCursorPos();
+        });
+        return;
+      }
+    }
+
+    // 5. BACKSPACE PAIR DELETION: (|), [|], {|}, "", '', ``
+    if (e.key === 'Backspace') {
+      if (start === end && start > 0 && start < val.length) {
+        const prev = val[start - 1];
+        const next = val[start];
+        const isPair =
+          (prev === '(' && next === ')') ||
+          (prev === '[' && next === ']') ||
+          (prev === '{' && next === '}') ||
+          (prev === '"' && next === '"') ||
+          (prev === "'" && next === "'") ||
+          (prev === '`' && next === '`');
+
+        if (isPair) {
+          e.preventDefault();
+          const updated = val.substring(0, start - 1) + val.substring(start + 1);
+          setCurrentCode(updated);
+          requestAnimationFrame(() => {
+            el.selectionStart = start - 1;
+            el.selectionEnd = start - 1;
+            updateCursorPos();
+          });
+          return;
+        }
+      }
     }
   };
 
@@ -1072,6 +1361,27 @@ export default function App() {
 
 
                       <button
+                        onClick={handleSkipChallenge}
+                        disabled={isLoadingChallenge}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: 6,
+                          border: '1px solid rgba(245, 158, 11, 0.35)',
+                          background: 'rgba(245, 158, 11, 0.08)',
+                          color: '#fbbf24',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                        title="Skip this question and advance to next in the queue"
+                      >
+                        <span>⏩</span> Skip
+                      </button>
+
+                      <button
                         onClick={() => setCurrentCode(currentSessionChallenge?.challenge.starter_code || '')}
                         style={{
                           padding: '5px 12px',
@@ -1613,14 +1923,66 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <div style={{ flex: reviewResult ? '1 1 50%' : '1 1 100%', position: 'relative', overflow: 'hidden' }}>
-                    <textarea
-                      value={currentCode}
-                      onChange={(e) => setCurrentCode(e.target.value)}
-                      className="code-editor-textarea"
-                      placeholder="Type or paste your code solution here..."
-                      spellCheck={false}
-                    />
+                  <div style={{ flex: reviewResult ? '1 1 50%' : '1 1 100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', background: 'rgba(7, 11, 22, 0.75)' }}>
+                      {/* Line Number Gutter */}
+                      <div
+                        ref={editorGutterRef}
+                        className="code-editor-gutter"
+                        aria-hidden="true"
+                      >
+                        {Array.from({ length: Math.max(1, currentCode.split('\n').length) }, (_, i) => i + 1).map((lineNum) => (
+                          <div
+                            key={lineNum}
+                            className={`code-editor-gutter-line ${lineNum === cursorPos.line ? 'active' : ''}`}
+                          >
+                            {lineNum}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Smart Code Editor Textarea */}
+                      <textarea
+                        ref={editorTextareaRef}
+                        value={currentCode}
+                        onChange={(e) => {
+                          setCurrentCode(e.target.value);
+                          updateCursorPos();
+                        }}
+                        onKeyDown={handleEditorKeyDown}
+                        onKeyUp={updateCursorPos}
+                        onClick={updateCursorPos}
+                        onSelect={updateCursorPos}
+                        onScroll={handleEditorScroll}
+                        className="code-editor-textarea"
+                        placeholder="Write your code solution here..."
+                        spellCheck={false}
+                        autoCapitalize="none"
+                        autoComplete="off"
+                        autoCorrect="off"
+                      />
+                    </div>
+
+                    {/* IDE Status Bar */}
+                    <div className="code-editor-statusbar">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399' }}></span>
+                          <span>{selectedTrack}</span>
+                        </span>
+                        <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>|</span>
+                        <span>UTF-8</span>
+                        <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>|</span>
+                        <span>Spaces: 4</span>
+                        <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>|</span>
+                        <span style={{ color: '#818cf8' }}>⚡ Auto-Indent & Pairs Active</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span>Ln {cursorPos.line}, Col {cursorPos.col}</span>
+                        <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>|</span>
+                        <span>{currentCode.split('\n').length} lines</span>
+                      </div>
+                    </div>
                   </div>
                 )}
 
