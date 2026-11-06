@@ -42,6 +42,12 @@ export default function App() {
   const editorGutterRef = useRef<HTMLDivElement>(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
 
+  // Mobile responsive layout states (LeetCode-style multi-pane segmented UX)
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+  const [mobileArenaTab, setMobileArenaTab] = useState<'problem' | 'editor' | 'review'>('problem');
+
   // Onboarding state
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingLevel, setOnboardingLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>('BEGINNER');
@@ -115,6 +121,15 @@ export default function App() {
       isOffline: isOff,
     });
   };
+
+  // Mobile resize listener
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -237,6 +252,24 @@ export default function App() {
     const line = lines.length;
     const col = lines[lines.length - 1].length + 1;
     setCursorPos({ line, col });
+  };
+
+  const handleInsertSymbol = (sym: string) => {
+    const el = editorTextareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const val = el.value;
+    const insertion = sym === 'Tab' ? '    ' : sym;
+    const updated = val.substring(0, start) + insertion + val.substring(end);
+    setCurrentCode(updated);
+    requestAnimationFrame(() => {
+      el.focus();
+      const newPos = start + insertion.length;
+      el.selectionStart = newPos;
+      el.selectionEnd = newPos;
+      updateCursorPos();
+    });
   };
 
   const handleEditorScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
@@ -781,6 +814,9 @@ export default function App() {
         conceptsDemonstrated: result.concepts_demonstrated || [],
         timestamp: result.timestamp || new Date().toLocaleTimeString(),
       });
+      if (isMobile) {
+        setMobileArenaTab('review');
+      }
     } catch (err: any) {
       console.error('Submission error:', err);
       handleNetworkError('Evaluation Request Failed', 'Evaluation request failed. Please check backend connection.', err);
@@ -1181,6 +1217,7 @@ export default function App() {
 
           {/* Central Workspace Navigation Tabs */}
           <div
+            className="desktop-only-nav"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -1324,6 +1361,30 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   {activeSession ? (
                     <>
+                      {/* Mobile Compact Timer in Sub-Header */}
+                      <div className="mobile-only-nav" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                          <span className="pulsing-emerald-dot" style={{ width: 5, height: 5 }}></span>
+                          <span>{formatTimer(sessionTimer)}</span>
+                        </div>
+                        <button
+                          onClick={handleAbandonSession}
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid rgba(244, 63, 94, 0.3)',
+                            color: 'var(--accent-rose)',
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            fontSize: 10,
+                            cursor: 'pointer',
+                          }}
+                          title="Abandon Session"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <div className="desktop-only-nav" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderRight: '1px solid rgba(255, 255, 255, 0.08)', paddingRight: 12 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-emerald)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                           <span className="pulsing-emerald-dot" style={{ width: 6, height: 6 }}></span>
@@ -1411,6 +1472,7 @@ export default function App() {
                       >
                         {isSubmitting ? 'Evaluating...' : 'Submit Solution →'}
                       </button>
+                      </div>
                     </>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-emerald)' }}>
@@ -1421,18 +1483,44 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Mobile 3-Way Segmented Navigation (Problem / Code Editor / Rubric) */}
+              {isMobile && activeSession && (
+                <div style={{ padding: '8px 12px', background: 'rgba(10, 16, 32, 0.95)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div className="mobile-arena-segmented-nav">
+                    <button
+                      onClick={() => setMobileArenaTab('problem')}
+                      className={`mobile-arena-tab-pill ${mobileArenaTab === 'problem' ? 'active' : ''}`}
+                    >
+                      <span>📄</span> Problem
+                    </button>
+                    <button
+                      onClick={() => setMobileArenaTab('editor')}
+                      className={`mobile-arena-tab-pill ${mobileArenaTab === 'editor' ? 'active' : ''}`}
+                    >
+                      <span>💻</span> Code Editor
+                    </button>
+                    <button
+                      onClick={() => setMobileArenaTab('review')}
+                      className={`mobile-arena-tab-pill ${mobileArenaTab === 'review' ? 'active' : ''}`}
+                    >
+                      <span>📊</span> Rubric {reviewResult ? `(${reviewResult.score}%)` : ''}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Main Dual Split Pane */}
-              <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+              <div style={{ flex: 1, display: 'flex', overflow: 'hidden', paddingBottom: isMobile && activeSession ? 104 : 0 }}>
               {/* Left Column: Problem & Instructions or Free Practice Launcher */}
               <div
                 style={{
-                  width: '42%',
-                  borderRight: '1px solid var(--border-subtle)',
+                  width: isMobile ? '100%' : '42%',
+                  display: isMobile && mobileArenaTab !== 'problem' ? 'none' : 'flex',
+                  borderRight: isMobile ? 'none' : '1px solid var(--border-subtle)',
                   background: 'rgba(8, 12, 26, 0.75)',
-                  display: 'flex',
                   flexDirection: 'column',
                   overflowY: 'auto',
-                  padding: '24px 28px',
+                  padding: isMobile ? '16px' : '24px 28px',
                 }}
               >
                 {isLoadingChallenge ? (
@@ -1802,7 +1890,32 @@ export default function App() {
               </div>
 
               {/* Right Column: Code Editor & AI Review */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-terminal)', overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: isMobile ? '100%' : 'auto',
+                  flex: isMobile ? (mobileArenaTab === 'problem' ? 'none' : 1) : 1,
+                  display: isMobile && mobileArenaTab === 'problem' ? 'none' : 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  background: 'var(--bg-terminal)',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Mobile Quick Symbol Bar */}
+                {isMobile && mobileArenaTab === 'editor' && (
+                  <div className="mobile-symbol-bar">
+                    {[':', '(', ')', '{', '}', '[', ']', '"', "'", '=', '==', '!=', '->', 'Tab', 'def', 'return'].map((sym) => (
+                      <button
+                        key={sym}
+                        type="button"
+                        onClick={() => handleInsertSymbol(sym)}
+                        className="mobile-symbol-btn"
+                      >
+                        {sym}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {/* Editor Header Bar */}
                 <div
                   style={{
@@ -1998,12 +2111,12 @@ export default function App() {
                 {reviewResult && (
                   <div
                     style={{
-                      flex: '1 1 50%',
+                      flex: isMobile ? (mobileArenaTab === 'review' ? '1 1 100%' : 'none') : (reviewResult ? '1 1 50%' : 'none'),
+                      display: isMobile && mobileArenaTab !== 'review' ? 'none' : 'flex',
                       borderTop: '1px solid var(--border-bright)',
                       background: 'rgba(10, 16, 36, 0.96)',
-                      padding: '20px 24px',
+                      padding: isMobile ? '16px' : '20px 24px',
                       overflowY: 'auto',
-                      display: 'flex',
                       flexDirection: 'column',
                       gap: 14,
                     }}
@@ -2021,7 +2134,10 @@ export default function App() {
                         {reviewResult.isSolved ? (
                           <>
                             <button
-                              onClick={() => setReviewResult(null)}
+                              onClick={() => {
+                                setReviewResult(null);
+                                if (isMobile) setMobileArenaTab('editor');
+                              }}
                               className="btn-secondary-glass"
                               style={{ padding: '5px 12px', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}
                               title="Refine and retry your solution"
@@ -2045,7 +2161,10 @@ export default function App() {
                           </>
                         ) : (
                           <button
-                            onClick={() => setReviewResult(null)}
+                            onClick={() => {
+                              setReviewResult(null);
+                              if (isMobile) setMobileArenaTab('editor');
+                            }}
                             className="btn-secondary-glass"
                             style={{ padding: '5px 12px', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fca5a5' }}
                             title="Edit code to address rubric issues and retry"
@@ -2152,6 +2271,63 @@ export default function App() {
                 )}
               </div>
             </div>
+
+            {/* Mobile Sticky Action Bar */}
+            {isMobile && activeSession && (
+              <div className="mobile-sticky-action-bar">
+                <button
+                  onClick={handleSkipChallenge}
+                  disabled={isLoadingChallenge}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                    background: 'rgba(245, 158, 11, 0.12)',
+                    color: '#fbbf24',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <span>⏩</span> Skip
+                </button>
+
+                <button
+                  onClick={() => setCurrentCode(currentSessionChallenge?.challenge.starter_code || '')}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: 'var(--text-muted)',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  ↺ Reset
+                </button>
+
+                <button
+                  onClick={handleSubmitCode}
+                  disabled={isSubmitting || isLoadingChallenge}
+                  className="btn-primary-gradient"
+                  style={{
+                    padding: '8px 18px',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {isSubmitting ? 'Evaluating...' : '▶ Submit'}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -4284,6 +4460,33 @@ export default function App() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Mobile Bottom Navigation Bar */}
+        {currentUser && isMobile && (
+          <nav className="mobile-bottom-nav">
+            <button
+              onClick={() => setWorkspaceTab('arena')}
+              className={`mobile-bottom-nav-item ${workspaceTab === 'arena' ? 'active' : ''}`}
+            >
+              <span>⚡</span>
+              <span>Studio</span>
+            </button>
+            <button
+              onClick={() => setWorkspaceTab('launchpad')}
+              className={`mobile-bottom-nav-item ${workspaceTab === 'launchpad' ? 'active' : ''}`}
+            >
+              <span>📚</span>
+              <span>Curriculum</span>
+            </button>
+            <button
+              onClick={() => setWorkspaceTab('history')}
+              className={`mobile-bottom-nav-item ${workspaceTab === 'history' ? 'active' : ''}`}
+            >
+              <span>📈</span>
+              <span>Analytics</span>
+            </button>
+          </nav>
         )}
       </div>
     );

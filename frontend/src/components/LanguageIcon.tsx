@@ -190,3 +190,4 @@ export const LanguageIcon: React.FC<LanguageIconProps> = ({
 };
 
 export default LanguageIcon;
+

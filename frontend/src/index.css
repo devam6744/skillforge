@@ -411,3 +411,186 @@ body {
   color: #ffffff;
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
 }
+
+/* ==========================================================================
+   MOBILE RESPONSIVE SYSTEM (LeetCode / Mobile IDE UX)
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  .desktop-only-nav {
+    display: none !important;
+  }
+
+  .forge-card {
+    padding: 16px !important;
+  }
+
+  .code-editor-statusbar {
+    padding: 4px 10px !important;
+    font-size: 10px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-only-nav {
+    display: none !important;
+  }
+  .mobile-arena-segmented-nav {
+    display: none !important;
+  }
+  .mobile-symbol-bar {
+    display: none !important;
+  }
+  .mobile-sticky-action-bar {
+    display: none !important;
+  }
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+}
+
+/* Mobile Segmented 3-Way Arena Switch */
+.mobile-arena-segmented-nav {
+  display: flex;
+  background: rgba(15, 23, 42, 0.9);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mobile-arena-tab-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.mobile-arena-tab-pill.active {
+  background: rgba(99, 102, 241, 0.25);
+  border: 1px solid rgba(99, 102, 241, 0.5);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+}
+
+/* Mobile Developer Symbol Bar */
+.mobile-symbol-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(8, 12, 24, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.mobile-symbol-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-symbol-btn {
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #c7d2fe;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.mobile-symbol-btn:active {
+  background: rgba(99, 102, 241, 0.3);
+  border-color: rgba(99, 102, 241, 0.6);
+  color: #ffffff;
+}
+
+/* Mobile Sticky Action Bar */
+.mobile-sticky-action-bar {
+  position: fixed;
+  bottom: 54px;
+  left: 0;
+  right: 0;
+  background: rgba(10, 15, 30, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 100;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Mobile Bottom Navigation Bar */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 54px;
+  background: rgba(8, 12, 24, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 101;
+  padding: 0 8px;
+}
+
+.mobile-bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 0;
+  transition: all 0.15s ease;
+}
+
+.mobile-bottom-nav-item.active {
+  color: var(--accent-indigo);
+  font-weight: 700;
+}
+
+.mobile-bottom-nav-item span:first-child {
+  font-size: 16px;
+}
+
+/* Responsive Touch Scrolling Charts Container */
+.responsive-chart-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
