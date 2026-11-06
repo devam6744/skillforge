@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { LanguageIcon } from './components/LanguageIcon';
 import { api } from './services/api';
 import type { User, ProgrammingLanguage, PracticeSession, SessionChallengeData } from './types';
 
@@ -1152,6 +1153,7 @@ export default function App() {
                 borderRadius: 8,
               }}
             >
+              <LanguageIcon name={selectedTrack} size={15} style={{ marginRight: 2 }} />
               <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
                 Track:
               </span>
@@ -1486,9 +1488,14 @@ export default function App() {
                                 cursor: 'pointer',
                                 transition: 'all 0.15s ease',
                                 textAlign: 'center',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 6,
                               }}
                             >
-                              {lang}
+                              <LanguageIcon name={lang} size={20} />
+                              <span>{lang}</span>
                             </button>
                           );
                         })}
@@ -1811,7 +1818,8 @@ export default function App() {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', background: 'rgba(56, 189, 248, 0.08)', padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(56, 189, 248, 0.2)' }}>
-                      <span>📄</span> solution.{selectedTrack === 'Python' ? 'py' : selectedTrack === 'C++' ? 'cpp' : selectedTrack === 'Java' ? 'java' : selectedTrack === 'C' ? 'c' : 'ts'}
+                      <LanguageIcon name={selectedTrack} size={13} />
+                      solution.{selectedTrack === 'Python' ? 'py' : selectedTrack === 'C++' ? 'cpp' : selectedTrack === 'Java' ? 'java' : selectedTrack === 'C' ? 'c' : 'ts'}
                     </span>
                     <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
                       {activeSession ? '• Untrusted Text Input Buffer' : '• Standby'}
@@ -1966,8 +1974,8 @@ export default function App() {
                     {/* IDE Status Bar */}
                     <div className="code-editor-statusbar">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399' }}></span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <LanguageIcon name={selectedTrack} size={14} />
                           <span>{selectedTrack}</span>
                         </span>
                         <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>|</span>
@@ -2235,9 +2243,12 @@ export default function App() {
                           fontWeight: 700,
                           fontSize: 13,
                           transition: 'all 0.15s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 7,
                         }}
                       >
-                        {lang === 'Python' ? '🐍 ' : lang === 'C++' ? '⚡ ' : lang === 'Java' ? '☕ ' : lang === 'JavaScript' ? '🌐 ' : '⚙️ '}
+                        <LanguageIcon name={lang} size={16} />
                         {lang}
                       </button>
                     ))}
@@ -2504,7 +2515,7 @@ export default function App() {
                             transition: 'all 0.15s ease',
                           }}
                         >
-                          {isSel && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-emerald)' }}></span>}
+                          <LanguageIcon name={lang} size={15} />
                           {lang}
                         </button>
                       );
@@ -4222,9 +4233,14 @@ export default function App() {
                           background: onboardingLang === l ? 'var(--gradient-brand)' : 'rgba(18, 26, 56, 0.7)',
                           border: onboardingLang === l ? '1px solid #ffffff' : '1px solid var(--border-subtle)',
                           color: '#ffffff',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 6,
                         }}
                       >
-                        {l}
+                        <LanguageIcon name={l} size={22} />
+                        <span>{l}</span>
                       </button>
                     ))}
                   </div>
@@ -4522,15 +4538,17 @@ export default function App() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16 }}>
           {[
-            { name: 'Python', icon: '🐍', desc: 'Core syntax, dictionaries, OOP principles, exception handling & file I/O' },
-            { name: 'C++', icon: '⚡', desc: 'Pass-by-reference, class invariants, RAII smart pointers & STL' },
-            { name: 'Java', icon: '☕', desc: 'Encapsulation, interfaces, checked exceptions & collections' },
-            { name: 'JavaScript', icon: '🌐', desc: 'Closures, prototype chain, async/promises & modern ES6+' },
-            { name: 'C', icon: '⚙️', desc: 'Pointer arithmetic, address dereferencing, structs & memory safety' },
+            { name: 'Python', desc: 'Core syntax, dictionaries, OOP principles, exception handling & file I/O' },
+            { name: 'C++', desc: 'Pass-by-reference, class invariants, RAII smart pointers & STL' },
+            { name: 'Java', desc: 'Encapsulation, interfaces, checked exceptions & collections' },
+            { name: 'JavaScript', desc: 'Closures, prototype chain, async/promises & modern ES6+' },
+            { name: 'C', desc: 'Pointer arithmetic, address dereferencing, structs & memory safety' },
           ].map((track) => (
             <div key={track.name} className="forge-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: 30, marginBottom: 10 }}>{track.icon}</div>
+                <div style={{ marginBottom: 14 }}>
+                  <LanguageIcon name={track.name} size={38} />
+                </div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ffffff', marginBottom: 6 }}>{track.name}</h3>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16 }}>{track.desc}</p>
               </div>
