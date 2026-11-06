@@ -325,6 +325,8 @@ class SessionSubmitView(APIView):
 def calculate_user_streak(user):
     """
     Computes real-time consecutive practice streak and peak cadence for a user.
+    - Streak is strictly awarded based on actual completed code submissions.
+    - Merely logging in or viewing sessions NEVER counts towards streak.
     - Increments each next consecutive calendar day user practices.
     - If user practiced today: streak is active for today.
     - If user practiced yesterday but not yet today: streak from yesterday is still alive (at risk).
@@ -334,16 +336,15 @@ def calculate_user_streak(user):
     yesterday = today - timedelta(days=1)
 
     submission_dates = set(
-        Submission.objects.filter(user=user)
+        Submission.objects.filter(
+            user=user,
+            evaluation__isnull=False,
+            evaluation__status=Evaluation.Status.SUCCEEDED
+        )
         .values_list('created_at__date', flat=True)
         .distinct()
     )
-    session_dates = set(
-        PracticeSession.objects.filter(user=user)
-        .values_list('created_at__date', flat=True)
-        .distinct()
-    )
-    all_dates = sorted(submission_dates | session_dates, reverse=True)
+    all_dates = sorted(submission_dates, reverse=True)
 
     if not all_dates:
         return {

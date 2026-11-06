@@ -1916,7 +1916,9 @@ export default function App() {
                     ))}
                   </div>
                 )}
-                {/* Editor Header Bar */}
+                {/* Editor Header Bar & Editor Body (Hidden on Mobile when Rubric tab is active) */}
+                {(!isMobile || mobileArenaTab === 'editor') && (
+                  <>
                 <div
                   style={{
                     height: 40,
@@ -2106,6 +2108,8 @@ export default function App() {
                     </div>
                   </div>
                 )}
+                  </>
+                )}
 
                 {/* Live Real Evaluation Rubric Review Panel */}
                 {reviewResult && (
@@ -2182,7 +2186,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr 1fr', gap: 16, alignItems: 'center' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '140px 1fr 1fr', gap: isMobile ? 10 : 16, alignItems: 'center' }}>
                       <div
                         style={{
                           textAlign: 'center',
@@ -2269,6 +2273,103 @@ export default function App() {
                     )}
                   </div>
                 )}
+
+                {/* Mobile Rubric Standby View when No Evaluation has been performed yet */}
+                {isMobile && mobileArenaTab === 'review' && !reviewResult && (
+                  <div
+                    style={{
+                      flex: 1,
+                      height: '100%',
+                      overflowY: 'auto',
+                      padding: '28px 20px 90px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      background: 'rgba(8, 12, 26, 0.98)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 58,
+                        height: 58,
+                        borderRadius: 16,
+                        background: 'rgba(99, 102, 241, 0.12)',
+                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 26,
+                        marginBottom: 16,
+                        boxShadow: '0 8px 24px rgba(99, 102, 241, 0.2)',
+                      }}
+                    >
+                      📊
+                    </div>
+                    <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ffffff', marginBottom: 8, letterSpacing: '-0.01em' }}>
+                      Diagnostic Rubric Standby
+                    </h3>
+                    <p style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 360, lineHeight: 1.6, marginBottom: 20 }}>
+                      Submit your code solution in the <strong style={{ color: '#ffffff' }}>Code Editor</strong> tab to trigger live AI logic invariant verification, boundary trapping & asymptotic proofs.
+                    </p>
+
+                    <div
+                      style={{
+                        width: '100%',
+                        maxWidth: 380,
+                        textAlign: 'left',
+                        background: 'rgba(15, 23, 42, 0.85)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        borderRadius: 10,
+                        padding: '16px 18px',
+                        marginBottom: 24,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        ✦ Evaluated Upon Code Submission:
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 12, color: 'var(--text-main)' }}>
+                        <span style={{ color: 'var(--accent-emerald)', fontSize: 14 }}>✓</span>
+                        <span><strong>Logic & Invariants:</strong> Control flow correctness</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 12, color: 'var(--text-main)' }}>
+                        <span style={{ color: 'var(--accent-cyan)', fontSize: 14 }}>✓</span>
+                        <span><strong>Boundary Trapping:</strong> Empty, 0, null, extremes</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 12, color: 'var(--text-main)' }}>
+                        <span style={{ color: 'var(--accent-indigo)', fontSize: 14 }}>✓</span>
+                        <span><strong>Asymptotics:</strong> Time & memory allocation scale</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 12, color: 'var(--text-main)' }}>
+                        <span style={{ color: '#fbbf24', fontSize: 14 }}>✓</span>
+                        <span><strong>Defensive Guarding:</strong> Input preconditions</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setMobileArenaTab('editor')}
+                      className="btn-primary-gradient"
+                      style={{
+                        padding: '11px 24px',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        borderRadius: 8,
+                        boxShadow: '0 4px 16px rgba(99, 102, 241, 0.35)',
+                      }}
+                    >
+                      <span>💻</span>
+                      <span>Switch to Code Editor →</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -2333,8 +2434,8 @@ export default function App() {
 
           {/* TAB 2: CURRICULUM & TOPICS */}
           {workspaceTab === 'launchpad' && (
-            <div style={{ flex: 1, padding: '28px 36px', overflowY: 'auto' }}>
-              <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+            <div style={{ flex: 1, padding: isMobile ? '16px 12px 90px' : '28px 36px', overflowY: 'auto', overflowX: 'hidden', width: '100%', maxWidth: '100vw' }}>
+              <div style={{ maxWidth: 1120, margin: '0 auto', width: '100%' }}>
                 {notification && (
                   <div style={{ padding: '12px 20px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: 'var(--accent-emerald)', marginBottom: 20 }}>
                     {notification}
@@ -2398,33 +2499,33 @@ export default function App() {
                       <span className="tag-badge tag-indigo">FOUNDATIONS CURRICULUM</span>
                       <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>Language & Concept Mastery</span>
                     </div>
-                    <h2 style={{ fontSize: 26, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
+                    <h2 style={{ fontSize: isMobile ? 20 : 26, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
                       {selectedTrack} Core Engineering Syllabus
                     </h2>
                   </div>
 
                   {/* Language Pills */}
-                  <div style={{ display: 'flex', gap: 8, background: 'rgba(15, 23, 42, 0.8)', padding: 4, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? 6 : 8, background: 'rgba(15, 23, 42, 0.8)', padding: 4, borderRadius: 10, border: '1px solid var(--border-subtle)', maxWidth: '100%' }}>
                     {['Python', 'C++', 'Java', 'JavaScript', 'C'].map((lang) => (
                       <button
                         key={lang}
                         onClick={() => setSelectedTrack(lang)}
                         style={{
-                          padding: '8px 16px',
+                          padding: isMobile ? '6px 10px' : '8px 16px',
                           borderRadius: 8,
                           cursor: 'pointer',
                           background: selectedTrack.toLowerCase() === lang.toLowerCase() ? 'var(--gradient-brand)' : 'transparent',
                           border: 'none',
                           color: selectedTrack.toLowerCase() === lang.toLowerCase() ? '#ffffff' : 'var(--text-dim)',
                           fontWeight: 700,
-                          fontSize: 13,
+                          fontSize: isMobile ? 12 : 13,
                           transition: 'all 0.15s ease',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 7,
+                          gap: isMobile ? 5 : 7,
                         }}
                       >
-                        <LanguageIcon name={lang} size={16} />
+                        <LanguageIcon name={lang} size={isMobile ? 14 : 16} />
                         {lang}
                       </button>
                     ))}
@@ -2435,8 +2536,8 @@ export default function App() {
                 <div
                   className="forge-card"
                   style={{
-                    padding: '24px 28px',
-                    marginBottom: 28,
+                    padding: isMobile ? '16px 14px' : '24px 28px',
+                    marginBottom: isMobile ? 20 : 28,
                     background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%)',
                     border: '1px solid rgba(99, 102, 241, 0.25)',
                     display: 'flex',
@@ -2506,7 +2607,7 @@ export default function App() {
                     FOUNDATION TOPIC MODULES ({selectedTrack.toUpperCase()})
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 18 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: isMobile ? 12 : 18 }}>
                     {(() => {
                       const currentLang = languages.find((l) => l.name.toLowerCase() === selectedTrack.toLowerCase());
                       const topics = currentLang?.topics || [];
@@ -2577,14 +2678,14 @@ export default function App() {
 
           {/* TAB 3: ENGINEERING ANALYTICS & TELEMETRY (Stitch Obsidian Cybernetic Glass) */}
           {workspaceTab === 'history' && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', overflowX: 'hidden', width: '100%', maxWidth: '100vw' }}>
               {/* Sub-Header Status & Context Control Strip */}
               <div
                 style={{
                   background: 'rgba(6, 14, 32, 0.85)',
                   borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                   backdropFilter: 'blur(16px)',
-                  padding: '16px 32px',
+                  padding: isMobile ? '12px 14px' : '16px 32px',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 14,
@@ -2664,7 +2765,7 @@ export default function App() {
                 {/* Filter Controls Row: Language Switcher & Time Window */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, paddingTop: 4 }}>
                   {/* Language Track Switcher */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(15, 23, 42, 0.8)', padding: 4, borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 6, background: 'rgba(15, 23, 42, 0.8)', padding: 4, borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.08)', flexWrap: 'wrap', maxWidth: '100%' }}>
                     {['Python', 'JavaScript', 'Java', 'C++', 'C'].map((lang) => {
                       const isSel = selectedTrack.toLowerCase() === lang.toLowerCase();
                       return (
@@ -2676,22 +2777,22 @@ export default function App() {
                             loadAnalytics(lang, analyticsTimeWindow);
                           }}
                           style={{
-                            padding: '5px 12px',
+                            padding: isMobile ? '4px 8px' : '5px 12px',
                             borderRadius: 6,
                             border: isSel ? '1px solid var(--accent-emerald)' : '1px solid transparent',
                             background: isSel ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
                             color: isSel ? 'var(--accent-emerald)' : 'var(--text-muted)',
                             fontFamily: 'var(--font-mono)',
-                            fontSize: 12,
+                            fontSize: isMobile ? 11 : 12,
                             fontWeight: isSel ? 700 : 500,
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 6,
+                            gap: isMobile ? 4 : 6,
                             transition: 'all 0.15s ease',
                           }}
                         >
-                          <LanguageIcon name={lang} size={15} />
+                          <LanguageIcon name={lang} size={isMobile ? 13 : 15} />
                           {lang}
                         </button>
                       );
@@ -2699,7 +2800,7 @@ export default function App() {
                   </div>
 
                   {/* Time Window Pills */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(15, 23, 42, 0.8)', padding: 4, borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(15, 23, 42, 0.8)', padding: 4, borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.08)', flexWrap: 'wrap', maxWidth: '100%' }}>
                     {[
                       { id: '7d', label: 'Last 7 Days' },
                       { id: '30d', label: 'Last 30 Days' },
@@ -2734,7 +2835,7 @@ export default function App() {
               </div>
 
               {/* Core Analytics Canvas Container */}
-              <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 28 }}>
+              <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', padding: isMobile ? '16px 12px 90px' : '24px 32px', display: 'flex', flexDirection: 'column', gap: isMobile ? 18 : 28, overflowX: 'hidden' }}>
                 
                 {/* ========================================================================= */}
                 {/* 1. PRECISION KPI TILES WITH CIRCULAR RADIAL SVG GAUGES                    */}
@@ -2762,7 +2863,7 @@ export default function App() {
                   const streakStrokeOffset = circleCircumference - (circleCircumference * streakRatio) / 100;
 
                   return (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(240px, 1fr))', gap: isMobile ? 12 : 16 }}>
                       {/* KPI 1: Global Rubric Score (Interactive Gauge) */}
                       <div
                         className="forge-card"
@@ -2985,7 +3086,7 @@ export default function App() {
                 <div
                   className="forge-card"
                   style={{
-                    padding: '24px 28px',
+                    padding: isMobile ? '16px 14px' : '24px 28px',
                     background: 'rgba(15, 23, 42, 0.85)',
                     border: '1px solid rgba(255, 255, 255, 0.08)',
                     position: 'relative',
@@ -3333,7 +3434,7 @@ export default function App() {
                 {/* ========================================================================= */}
                 {/* 3. 2-COLUMN SPLIT: 5-AXIS RADAR CHART + 2-WAY BAYESIAN CALIBRATION LAB   */}
                 {/* ========================================================================= */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 0.95fr)', gap: 24, alignItems: 'stretch' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.05fr) minmax(0, 0.95fr)', gap: isMobile ? 16 : 24, alignItems: 'stretch' }}>
                   
                   {/* PANEL A: 5-AXIS MULTIDIMENSIONAL RADAR / SPIDER CHART */}
                   <div
@@ -3980,15 +4081,16 @@ export default function App() {
                             <div
                               onClick={() => setExpandedTopicSlug(isExpanded ? null : item.topic_slug)}
                               style={{
-                                padding: '14px 10px',
+                                padding: isMobile ? '12px 6px' : '14px 10px',
                                 display: 'flex',
-                                alignItems: 'center',
+                                flexDirection: isMobile ? 'column' : 'row',
+                                alignItems: isMobile ? 'flex-start' : 'center',
                                 justifyContent: 'space-between',
-                                gap: 16,
+                                gap: isMobile ? 10 : 16,
                                 cursor: 'pointer',
                               }}
                             >
-                              <div style={{ flex: 1, minWidth: 200 }}>
+                              <div style={{ flex: 1, minWidth: isMobile ? '100%' : 200, width: '100%' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                   <span style={{ fontSize: 14, fontWeight: 700, color: '#ffffff' }}>
                                     {item.name}
@@ -4018,7 +4120,7 @@ export default function App() {
                                 </div>
                               </div>
 
-                              <div style={{ width: 170, flexShrink: 0 }}>
+                              <div style={{ width: isMobile ? '100%' : 170, flexShrink: 0 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--font-mono)', marginBottom: 4 }}>
                                   <span style={{ color: 'var(--text-dim)' }}>CALIBRATION</span>
                                   <span style={{ color: progressColor, fontWeight: 700 }}>{item.score}%</span>
