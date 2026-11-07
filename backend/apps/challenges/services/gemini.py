@@ -1,4 +1,6 @@
 import json
+import time
+import random
 import hashlib
 import logging
 from typing import List, Dict, Any
@@ -43,37 +45,50 @@ class GeminiChallengeService:
         last_error = "Unknown error"
         for model in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-            try:
-                response = requests.post(
-                    url,
-                    json={
-                        "contents": [{"parts": [{"text": prompt}]}],
-                        "generationConfig": {
-                            "responseMimeType": "application/json",
-                            "temperature": temperature,
-                        }
-                    },
-                    verify=False,
-                    timeout=timeout
-                )
+            # Retry loop with exponential backoff on burst rate limits (HTTP 429 / 503)
+            for attempt in range(2):
+                try:
+                    response = requests.post(
+                        url,
+                        json={
+                            "contents": [{"parts": [{"text": prompt}]}],
+                            "generationConfig": {
+                                "responseMimeType": "application/json",
+                                "temperature": temperature,
+                            }
+                        },
+                        verify=False,
+                        timeout=timeout
+                    )
 
-                if response.status_code == 200:
-                    candidates = response.json().get('candidates', [])
-                    if candidates:
-                        text = candidates[0]['content']['parts'][0]['text'].strip()
-                        if text.startswith("```json"):
-                            text = text[7:]
-                        if text.startswith("```"):
-                            text = text[3:]
-                        if text.endswith("```"):
-                            text = text[:-3]
-                        return json.loads(text.strip()), model
+                    if response.status_code == 200:
+                        candidates = response.json().get('candidates', [])
+                        if candidates:
+                            text = candidates[0]['content']['parts'][0]['text'].strip()
+                            if text.startswith("```json"):
+                                text = text[7:]
+                            if text.startswith("```"):
+                                text = text[3:]
+                            if text.endswith("```"):
+                                text = text[:-3]
+                            return json.loads(text.strip()), model
 
-                last_error = f"{model} returned HTTP {response.status_code}: {response.text[:120]}"
-            except requests.exceptions.RequestException as req_err:
-                last_error = f"Network connection error for {model}: {req_err}"
-            except json.JSONDecodeError as json_err:
-                last_error = f"JSON decode error from {model}: {json_err}"
+                    if response.status_code in (429, 503):
+                        backoff = 1.0 * (1.8 ** attempt) + random.uniform(0.1, 0.4)
+                        logger.warning(
+                            f"Gemini {model} burst rate-limited (HTTP {response.status_code}). Backing off for {backoff:.2f}s..."
+                        )
+                        time.sleep(backoff)
+                        continue
+
+                    last_error = f"{model} returned HTTP {response.status_code}: {response.text[:120]}"
+                    break
+                except requests.exceptions.RequestException as req_err:
+                    last_error = f"Network connection error for {model}: {req_err}"
+                    break
+                except json.JSONDecodeError as json_err:
+                    last_error = f"JSON decode error from {model}: {json_err}"
+                    break
 
         raise AIConnectionError(
             f"Active internet connection required for live AI challenge generation. ({last_error})"

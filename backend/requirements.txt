@@ -11,6 +11,11 @@ python-dotenv>=1.0.1
 # AI & HTTP client
 google-genai>=1.0.0
 httpx>=0.28.0
+requests>=2.31.0
+
+# Production Server & Static Files (Render / Railway / Heroku / AWS)
+whitenoise>=6.8.0
+gunicorn>=23.0.0
 
 # Utilities & Testing
 pytest>=8.3.0

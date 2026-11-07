@@ -5,6 +5,7 @@ from django.utils import timezone
 from apps.practice.models import PracticeSession, SessionChallenge
 from apps.challenges.models import Challenge
 from apps.catalog.models import Topic
+from apps.submissions.models import Submission
 from apps.challenges.services.gemini import GeminiChallengeService, AIConnectionError
 from apps.challenges.services.rate_limiter import AIRateLimiter, session_ai_lock
 
@@ -82,16 +83,69 @@ class ChallengeDeliveryService:
             difficulty = session.difficulty_mode if session.difficulty_mode != 'ADAPTIVE' else 'EASY'
             practice_mode = session.practice_mode
 
-            # Generate batch from Gemini AI
-            raw_challenges = GeminiChallengeService.generate_challenge_batch(
-                language_name=session.language.name,
-                language_slug=session.language.slug,
-                topic_name=target_topic.name,
-                topic_slug=target_topic.slug,
-                difficulty=difficulty,
-                practice_mode=practice_mode,
-                count=batch_size
-            )
+            # Generate batch from Gemini AI, with automatic resilient fallback to verified DB pool on rate limits
+            raw_challenges = []
+            try:
+                raw_challenges = GeminiChallengeService.generate_challenge_batch(
+                    language_name=session.language.name,
+                    language_slug=session.language.slug,
+                    topic_name=target_topic.name,
+                    topic_slug=target_topic.slug,
+                    difficulty=difficulty,
+                    practice_mode=practice_mode,
+                    count=batch_size
+                )
+            except AIConnectionError as ai_err:
+                logger.warning(
+                    f"Live Gemini generation encountered rate-limit or error ({ai_err}). Engaging zero-downtime DB pool fallback..."
+                )
+                user_solved_ids = Submission.objects.filter(
+                    user=session.user
+                ).values_list('challenge_id', flat=True)
+
+                fallback_challenges = list(
+                    Challenge.objects.filter(
+                        language=session.language,
+                        primary_topic=target_topic,
+                        quality_status=Challenge.QualityStatus.VALID
+                    ).exclude(id__in=user_solved_ids)[:batch_size]
+                )
+
+                if len(fallback_challenges) < batch_size:
+                    additional = list(
+                        Challenge.objects.filter(
+                            language=session.language,
+                            quality_status=Challenge.QualityStatus.VALID
+                        ).exclude(
+                            id__in=set(user_solved_ids) | {c.id for c in fallback_challenges}
+                        )[:batch_size - len(fallback_challenges)]
+                    )
+                    fallback_challenges.extend(additional)
+
+                if fallback_challenges:
+                    created_challenges = []
+                    with transaction.atomic():
+                        for idx, ch_obj in enumerate(fallback_challenges):
+                            order = start_order + idx
+                            initial_status = SessionChallenge.Status.ACTIVE if idx == 0 else SessionChallenge.Status.PENDING
+                            sc = SessionChallenge.objects.create(
+                                session=session,
+                                challenge=ch_obj,
+                                question_order=order,
+                                status=initial_status,
+                                started_at=timezone.now() if idx == 0 else None
+                            )
+                            created_challenges.append(sc)
+
+                        if session.status == PracticeSession.Status.CREATED:
+                            session.status = PracticeSession.Status.IN_PROGRESS
+                            session.started_at = timezone.now()
+                            session.save(update_fields=['status', 'started_at', 'updated_at'])
+
+                    return created_challenges[0], False, f"Delivered verified challenge (1 of {len(created_challenges)} ready from resilient pool)."
+
+                # If no DB challenges exist at all, reraise
+                raise ai_err
 
             created_challenges = []
             with transaction.atomic():

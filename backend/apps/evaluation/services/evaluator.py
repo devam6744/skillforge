@@ -1,4 +1,6 @@
 import json
+import time
+import random
 import logging
 from typing import Dict, Any, List
 import requests
@@ -64,7 +66,29 @@ class CodeEvaluationService:
                     concepts_demonstrated=[]
                 )
 
-        # 3. Live Gemini AI Evaluation
+        # 3. Check for recent identical evaluated submission (burst spam & quota protection)
+        cached_eval = Evaluation.objects.filter(
+            submission__challenge=challenge,
+            submission__user=submission.user,
+            submission__source_code=source_code,
+            status__in=[Evaluation.Status.SUCCEEDED, Evaluation.Status.FAILED],
+            score__isnull=False
+        ).exclude(submission=submission).order_by('-completed_at').first()
+
+        if cached_eval and cached_eval.completed_at and (timezone.now() - cached_eval.completed_at).total_seconds() < 600:
+            return cls._create_evaluation(
+                submission=submission,
+                score=cached_eval.score,
+                status=cached_eval.status,
+                summary=cached_eval.summary,
+                feedback=cached_eval.approach_feedback,
+                syntax_issues=cached_eval.syntax_issues,
+                logic_issues=cached_eval.logic_issues,
+                complexity=cached_eval.code_quality_feedback or "O(1) execution",
+                concepts_demonstrated=cached_eval.concepts_demonstrated
+            )
+
+        # 4. Live Gemini AI Evaluation
         ai_result = cls._evaluate_with_gemini(submission)
         score = int(ai_result.get('score', 75))
         passed = score >= 70
@@ -118,37 +142,50 @@ Return ONLY a valid JSON object matching this schema:
         last_error = "Unknown error"
         for model in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-            try:
-                response = requests.post(
-                    url,
-                    json={
-                        "contents": [{"parts": [{"text": prompt}]}],
-                        "generationConfig": {
-                            "responseMimeType": "application/json",
-                            "temperature": 0.2,
-                        }
-                    },
-                    verify=False,
-                    timeout=30
-                )
+            # Exponential backoff loop on burst rate limits (HTTP 429 / 503)
+            for attempt in range(2):
+                try:
+                    response = requests.post(
+                        url,
+                        json={
+                            "contents": [{"parts": [{"text": prompt}]}],
+                            "generationConfig": {
+                                "responseMimeType": "application/json",
+                                "temperature": 0.2,
+                            }
+                        },
+                        verify=False,
+                        timeout=30
+                    )
 
-                if response.status_code == 200:
-                    candidates = response.json().get('candidates', [])
-                    if candidates:
-                        text = candidates[0]['content']['parts'][0]['text'].strip()
-                        if text.startswith("```json"):
-                            text = text[7:]
-                        if text.startswith("```"):
-                            text = text[3:]
-                        if text.endswith("```"):
-                            text = text[:-3]
-                        return json.loads(text.strip())
+                    if response.status_code == 200:
+                        candidates = response.json().get('candidates', [])
+                        if candidates:
+                            text = candidates[0]['content']['parts'][0]['text'].strip()
+                            if text.startswith("```json"):
+                                text = text[7:]
+                            if text.startswith("```"):
+                                text = text[3:]
+                            if text.endswith("```"):
+                                text = text[:-3]
+                            return json.loads(text.strip())
 
-                last_error = f"{model} returned HTTP {response.status_code}: {response.text[:120]}"
-            except requests.exceptions.RequestException as req_err:
-                last_error = f"Network connection error for {model}: {req_err}"
-            except json.JSONDecodeError as json_err:
-                last_error = f"JSON decode error from {model}: {json_err}"
+                    if response.status_code in (429, 503):
+                        backoff = 1.0 * (1.8 ** attempt) + random.uniform(0.1, 0.4)
+                        logger.warning(
+                            f"Gemini evaluation {model} burst rate-limited (HTTP {response.status_code}). Backing off for {backoff:.2f}s..."
+                        )
+                        time.sleep(backoff)
+                        continue
+
+                    last_error = f"{model} returned HTTP {response.status_code}: {response.text[:120]}"
+                    break
+                except requests.exceptions.RequestException as req_err:
+                    last_error = f"Network connection error for {model}: {req_err}"
+                    break
+                except json.JSONDecodeError as json_err:
+                    last_error = f"JSON decode error from {model}: {json_err}"
+                    break
 
         raise AIConnectionError(
             f"Active internet connection required for live AI code evaluation. ({last_error})"

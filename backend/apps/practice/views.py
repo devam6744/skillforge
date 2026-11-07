@@ -19,6 +19,7 @@ from apps.submissions.models import Submission
 from apps.evaluation.models import Evaluation
 from apps.skills.models import SkillState
 from apps.evaluation.services.evaluator import CodeEvaluationService
+from apps.challenges.services.rate_limiter import AIRateLimiter
 
 
 class SessionListCreateView(generics.ListCreateAPIView):
@@ -269,6 +270,14 @@ class SessionSubmitView(APIView):
 
         if not challenge_id:
             return Response({"detail": "challenge_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Protect against rapid spam submissions (max 12 submissions per minute per user)
+        is_allowed, wait_sec = AIRateLimiter.check_and_consume(str(request.user.id), max_requests=12, window_seconds=60)
+        if not is_allowed:
+            return Response(
+                {"error": "RATE_LIMIT_EXCEEDED", "detail": f"Submission rate limit reached. Please wait {wait_sec} seconds before submitting again."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
 
         challenge = get_object_or_404(Challenge, id=challenge_id)
 
