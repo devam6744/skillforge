@@ -1,6 +1,11 @@
 import type { User, AuthResponse } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const isBrowser = typeof window !== 'undefined';
+const isLocalhost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (isLocalhost ? 'http://localhost:8000/api/v1' : '/api/v1');
 
 function getCookie(name: string): string | null {
   const value = `; ${document.cookie}`;

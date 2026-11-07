@@ -1,5 +1,7 @@
 import os
 import sys
+import traceback
+import json
 from pathlib import Path
 
 # Add backend directory to sys.path so Django config and apps are found
@@ -9,10 +11,22 @@ if str(BACKEND_DIR) not in sys.path:
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
-import django
-django.setup()
+django_app = None
+init_error = None
 
-from django.core.wsgi import get_wsgi_application
+try:
+    from django.core.wsgi import get_wsgi_application
+    django_app = get_wsgi_application()
+except Exception as e:
+    init_error = traceback.format_exc()
 
-# Vercel WSGI entrypoint
-app = get_wsgi_application()
+def app(environ, start_response):
+    if init_error:
+        status = '500 Internal Server Error'
+        response_headers = [
+            ('Content-Type', 'application/json'),
+            ('Access-Control-Allow-Origin', '*')
+        ]
+        start_response(status, response_headers)
+        return [json.dumps({"error": "DJANGO_INIT_ERROR", "traceback": init_error}).encode('utf-8')]
+    return django_app(environ, start_response)
