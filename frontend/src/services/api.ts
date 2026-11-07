@@ -1,11 +1,17 @@
 import type { User, AuthResponse } from '../types';
 
-const isBrowser = typeof window !== 'undefined';
-const isLocalhost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    // In production (e.g. Vercel, cloud domains), always route same-origin to /api/v1
+    if (!isLocal) {
+      return '/api/v1';
+    }
+  }
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+}
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (isLocalhost ? 'http://localhost:8000/api/v1' : '/api/v1');
+const API_BASE_URL = getApiBaseUrl();
 
 function getCookie(name: string): string | null {
   const value = `; ${document.cookie}`;
