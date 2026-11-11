@@ -4711,6 +4711,18 @@ export default function App() {
             </button>
           </nav>
         )}
+
+        {/* User Profile & Multi-Device Settings Modal */}
+        <ProfileModal
+          isOpen={profileModalOpen}
+          onClose={() => setProfileModalOpen(false)}
+          currentUser={currentUser}
+          onUpdateUser={setCurrentUser}
+          onNotification={(msg) => {
+            setNotification(msg);
+            setTimeout(() => setNotification(null), 4000);
+          }}
+        />
       </div>
     );
   }
@@ -5365,19 +5377,7 @@ export default function App() {
         </div>
       )}
 
-      {/* USER PROFILE & MULTI-DEVICE MANAGEMENT MODAL */}
-      {currentUser && (
-        <ProfileModal
-          isOpen={profileModalOpen}
-          onClose={() => setProfileModalOpen(false)}
-          currentUser={currentUser}
-          onUpdateUser={setCurrentUser}
-          onNotification={(msg) => {
-            setNotification(msg);
-            setTimeout(() => setNotification(null), 4000);
-          }}
-        />
-      )}
+
     </div>
   );
 }
