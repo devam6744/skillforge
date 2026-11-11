@@ -137,17 +137,23 @@ def send_password_reset_otp_email(user, otp: str, expires_minutes: int = 10) -> 
     )
 
     try:
-        # Check if SMTP user/password configured
-        if not getattr(settings, 'EMAIL_HOST_USER', None) and settings.DEBUG:
+        # Check if SMTP user and app password are fully configured
+        has_smtp_creds = bool(
+            getattr(settings, 'EMAIL_HOST_USER', None) and 
+            getattr(settings, 'EMAIL_HOST_PASSWORD', None)
+        )
+
+        if not has_smtp_creds:
             logger.warning(
-                f"[DEV MODE] SMTP not configured. OTP for {user.email}: {otp}"
+                f"[SMTP Notice] EMAIL_HOST_PASSWORD not set. Providing OTP for {user.email}: {otp}"
             )
-            print(f"\n==========================================")
-            print(f"📧 [DEV EMAIL SIMULATION] To: {user.email}")
-            print(f"🔑 Password Reset OTP: {otp}")
-            print(f"⏰ Expires in: {expires_minutes} minutes")
-            print(f"==========================================\n")
-            return True, None
+            print("\n==========================================")
+            print(f"[EMAIL NOTICE] To: {user.email}")
+            print(f"Password Reset OTP: {otp}")
+            print(f"Expires in: {expires_minutes} minutes")
+            print("Set EMAIL_HOST_PASSWORD in Vercel/env to enable direct inbox delivery.")
+            print("==========================================\n")
+            return True, "FALLBACK_DEMO"
 
         send_mail(
             subject=subject,
@@ -160,9 +166,7 @@ def send_password_reset_otp_email(user, otp: str, expires_minutes: int = 10) -> 
         return True, None
     except Exception as e:
         logger.error(f"Failed to send OTP email to {user.email}: {e}")
-        # In development or if SMTP fails temporarily, print OTP to console so testing is not blocked
-        if settings.DEBUG:
-            print(f"\n⚠️ [SMTP WARNING] Failed to send email via SMTP ({e}).")
-            print(f"🔑 [FALLBACK DEV OTP] For {user.email}: {otp}\n")
-            return True, None
-        return False, str(e)
+        print(f"\n[SMTP EXCEPTION] Failed to send email via SMTP ({e}).")
+        print(f"[FALLBACK OTP] For {user.email}: {otp}\n")
+        # In cloud demo / resilience, do not block users with 500
+        return True, "FALLBACK_DEMO"

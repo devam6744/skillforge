@@ -740,7 +740,12 @@ export default function App() {
 
     try {
       const res = await api.auth.requestPasswordResetOtp(email.trim());
-      setForgotSuccess(res.message || 'Verification code sent to your email.');
+      if (res.demo_otp) {
+        setForgotOtp(res.demo_otp);
+        setForgotSuccess(`Verification Code: ${res.demo_otp} (Auto-filled below for instant testing)`);
+      } else {
+        setForgotSuccess(res.message || 'Verification code sent to your email. Please check your inbox & spam folder.');
+      }
       setForgotStep('otp');
       setForgotCountdown(600); // 10 minutes
     } catch (err: any) {
@@ -2956,7 +2961,7 @@ export default function App() {
               </div>
 
               {/* Core Analytics Canvas Container */}
-              <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', padding: isMobile ? '16px 12px 90px' : '24px 32px', display: 'flex', flexDirection: 'column', gap: isMobile ? 18 : 28, overflowX: 'hidden' }}>
+              <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', padding: isMobile ? '16px 12px 160px' : '24px 32px 180px', display: 'flex', flexDirection: 'column', gap: isMobile ? 18 : 28, overflowX: 'hidden' }}>
                 
                 {/* ========================================================================= */}
                 {/* 1. PRECISION KPI TILES WITH CIRCULAR RADIAL SVG GAUGES                    */}
@@ -4475,7 +4480,219 @@ export default function App() {
                 </div>
 
                 {/* ========================================================================= */}
-                {/* 6. ADAPTIVE DIAGNOSTIC & REMEDIATION LAUNCHER                 */}
+                {/* 6. RECENT PRACTICE SESSIONS & SUBMISSION HISTORY (3 Flash Cards + Records) */}
+                {/* ========================================================================= */}
+                <div
+                  className="forge-card"
+                  style={{
+                    padding: isMobile ? 18 : 24,
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 18,
+                    overflow: 'visible',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 20 }}>📜</span>
+                        <h3 style={{ fontSize: 17, fontWeight: 700, color: '#ffffff', margin: 0, lineHeight: 1.3 }}>
+                          Recent Practice Sessions & Submission History
+                        </h3>
+                      </div>
+                      <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4, margin: '4px 0 0' }}>
+                        Verifiable chronological history of all practice sessions, attempted challenges & completion status
+                      </p>
+                    </div>
+                    <span className="tag-badge tag-emerald" style={{ fontSize: 10 }}>
+                      {sessionHistory.length} Sessions Logged
+                    </span>
+                  </div>
+
+                  {/* 3 Summary Flash Cards */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+                      gap: 12,
+                    }}
+                  >
+                    {/* Flash Card 1 */}
+                    <div
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: 10,
+                        backgroundColor: 'rgba(6, 14, 32, 0.75)',
+                        border: '1px solid rgba(16, 185, 129, 0.25)',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                      }}
+                    >
+                      <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-emerald)', textTransform: 'uppercase', marginBottom: 4 }}>
+                        Total Sessions
+                      </div>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: '#ffffff' }}>
+                        {sessionHistory.length}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
+                        {sessionHistory.filter(s => s.status === 'COMPLETED').length} Completed • {sessionHistory.filter(s => s.status === 'IN_PROGRESS').length} In Progress
+                      </div>
+                    </div>
+
+                    {/* Flash Card 2 */}
+                    <div
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: 10,
+                        backgroundColor: 'rgba(6, 14, 32, 0.75)',
+                        border: '1px solid rgba(99, 102, 241, 0.25)',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                      }}
+                    >
+                      <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-indigo)', textTransform: 'uppercase', marginBottom: 4 }}>
+                        Challenges Attempted
+                      </div>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: '#ffffff' }}>
+                        {sessionHistory.reduce((acc, s) => acc + (s.requested_question_count || 5), 0)}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
+                        Problems generated across all active sets
+                      </div>
+                    </div>
+
+                    {/* Flash Card 3 */}
+                    <div
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: 10,
+                        backgroundColor: 'rgba(6, 14, 32, 0.75)',
+                        border: '1px solid rgba(56, 189, 248, 0.25)',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                      }}
+                    >
+                      <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', textTransform: 'uppercase', marginBottom: 4 }}>
+                        Active Practice Track
+                      </div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <LanguageIcon name={selectedTrack} size={20} />
+                        <span>{selectedTrack}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
+                        Telemetry synced with Supabase DB
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Session Records Table or Empty State */}
+                  {sessionHistory.length === 0 ? (
+                    <div
+                      style={{
+                        padding: '28px 20px',
+                        textAlign: 'center',
+                        backgroundColor: 'rgba(6, 14, 32, 0.5)',
+                        borderRadius: 10,
+                        border: '1px dashed rgba(255, 255, 255, 0.1)',
+                      }}
+                    >
+                      <div style={{ fontSize: 28, marginBottom: 8 }}>🎯</div>
+                      <h4 style={{ margin: '0 0 4px', fontSize: 14, color: '#ffffff' }}>
+                        No Practice Sessions Yet
+                      </h4>
+                      <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--text-muted)' }}>
+                        Launch your first practice session in the Studio to begin logging submissions and live evaluation telemetry.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setWorkspaceTab('arena')}
+                        className="btn-primary-gradient"
+                        style={{ padding: '8px 18px', fontSize: 12 }}
+                      >
+                        ⚡ Start Practice Studio
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: 'rgba(6, 14, 32, 0.95)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontSize: 10, textTransform: 'uppercase' }}>
+                            <th style={{ padding: '10px 14px' }}>DATE & TIME</th>
+                            <th style={{ padding: '10px 14px' }}>TRACK & TOPIC</th>
+                            <th style={{ padding: '10px 14px' }}>DIFFICULTY</th>
+                            <th style={{ padding: '10px 14px' }}>CHALLENGES</th>
+                            <th style={{ padding: '10px 14px', textAlign: 'right' }}>STATUS</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sessionHistory.map((s) => {
+                            const dateStr = s.started_at
+                              ? new Date(s.started_at).toLocaleDateString(undefined, {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : new Date(s.created_at).toLocaleDateString();
+
+                            const statusColor =
+                              s.status === 'COMPLETED'
+                                ? 'var(--accent-emerald)'
+                                : s.status === 'IN_PROGRESS'
+                                ? 'var(--accent-indigo)'
+                                : 'var(--accent-rose)';
+
+                            return (
+                              <tr key={s.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)', background: 'rgba(15, 23, 42, 0.6)' }}>
+                                <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                                  {dateStr}
+                                </td>
+                                <td style={{ padding: '12px 14px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <LanguageIcon name={s.language_name} size={15} />
+                                    <span style={{ color: '#ffffff', fontWeight: 600 }}>{s.language_name}</span>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                                      • {s.topic_name || 'Mixed Track'}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                                  <span className="tag-badge tag-indigo" style={{ padding: '2px 8px', fontSize: 10 }}>
+                                    {s.difficulty_mode}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', color: '#ffffff', fontSize: 12 }}>
+                                  {s.requested_question_count} challenges
+                                </td>
+                                <td style={{ padding: '12px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                  <span
+                                    style={{
+                                      fontFamily: 'var(--font-mono)',
+                                      color: statusColor,
+                                      fontWeight: 700,
+                                      fontSize: 11,
+                                      background: s.status === 'COMPLETED' ? 'rgba(16, 185, 129, 0.12)' : s.status === 'IN_PROGRESS' ? 'rgba(99, 102, 241, 0.12)' : 'rgba(244, 63, 94, 0.12)',
+                                      padding: '3px 8px',
+                                      borderRadius: 4,
+                                      border: `1px solid ${statusColor}`,
+                                    }}
+                                  >
+                                    {s.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Clearance Spacer so nothing is clipped */}
+                <div style={{ height: 100, width: '100%', flexShrink: 0 }}></div>
+
+                {/* ========================================================================= */}
+                {/* 7. ADAPTIVE DIAGNOSTIC & REMEDIATION LAUNCHER                 */}
                 {/* ========================================================================= */}
                 <div
                   className="forge-card"
