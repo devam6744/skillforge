@@ -535,7 +535,7 @@ class AnalyticsTelemetryView(APIView):
                     {'dimension': 'Architecture & Style', 'score': 0, 'benchmark': 85, 'description': 'Naming, clean abstractions, non-mutating purity'},
                 ],
                 'diagnostic_insight': {
-                    'title': 'AI Diagnostic Calibration',
+                    'title': 'Adaptive Competency Insight',
                     'analysis': f"Welcome to SkillForge! You haven't completed any practice challenges yet. Solve your first scenario in {language_name} to calibrate your continuous rubric curve.",
                     'radar_metrics': {
                         'invariant_soundness': 0,

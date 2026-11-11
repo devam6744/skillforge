@@ -2961,7 +2961,7 @@ export default function App() {
               </div>
 
               {/* Core Analytics Canvas Container */}
-              <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', padding: isMobile ? '16px 12px 160px' : '24px 32px 180px', display: 'flex', flexDirection: 'column', gap: isMobile ? 18 : 28, overflowX: 'hidden' }}>
+              <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', padding: isMobile ? '16px 12px 160px' : '24px 32px 180px', display: 'flex', flexDirection: 'column', gap: isMobile ? 18 : 28, overflowX: 'hidden', flexShrink: 0, minHeight: 'min-content' }}>
                 
                 {/* ========================================================================= */}
                 {/* 1. PRECISION KPI TILES WITH CIRCULAR RADIAL SVG GAUGES                    */}
@@ -3216,6 +3216,8 @@ export default function App() {
                     background: 'rgba(15, 23, 42, 0.85)',
                     border: '1px solid rgba(255, 255, 255, 0.08)',
                     position: 'relative',
+                    flexShrink: 0,
+                    minHeight: 'min-content',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 20 }}>
@@ -3263,33 +3265,7 @@ export default function App() {
                   {/* SVG Chart Canvas */}
                   {(() => {
                     const rawSeries = analyticsData?.trajectory_series || [];
-
-                    if (rawSeries.length === 0) {
-                      return (
-                        <div style={{ padding: '42px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                          <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, marginBottom: 12 }}>
-                            📈
-                          </div>
-                          <h4 style={{ fontSize: 16, fontWeight: 700, color: '#ffffff', margin: '0 0 6px 0' }}>
-                            No Telemetry Trajectory Yet
-                          </h4>
-                          <p style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 440, lineHeight: 1.5, margin: '0 0 16px 0' }}>
-                            Complete practice challenges in the Arena to begin plotting your continuous rubric convergence curve and Bayesian mastery trajectory.
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const firstTopic = languages.find(l => l.name.toLowerCase() === selectedTrack.toLowerCase())?.topics[0]?.slug || selectedTopicSlug;
-                              handleStartPracticeSession(firstTopic, 'TOPIC');
-                            }}
-                            className="btn-primary"
-                            style={{ padding: '8px 18px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                          >
-                            <span>⚡ Start First Practice Challenge</span>
-                          </button>
-                        </div>
-                      );
-                    }
+                    const isNewTrack = rawSeries.length === 0;
 
                     const width = 860;
                     const height = 220;
@@ -3299,14 +3275,30 @@ export default function App() {
                     const padBottom = 34;
 
                     const count = rawSeries.length;
-                    const getX = (i: number) => padLeft + (i / Math.max(1, count - 1)) * (width - padLeft - padRight);
+                    const getX = (i: number) => {
+                      if (count <= 1) return (padLeft + width - padRight) / 2;
+                      return padLeft + (i / Math.max(1, count - 1)) * (width - padLeft - padRight);
+                    };
                     const minScore = 70;
                     const maxScore = 100;
                     const getY = (val: number) => padTop + (1 - (val - minScore) / (maxScore - minScore)) * (height - padTop - padBottom);
 
                     // Build path strings
-                    let rubricPoints = rawSeries.map((d: any, i: number) => `${getX(i)},${getY(d.score)}`).join(' ');
-                    let bayesianPoints = rawSeries.map((d: any, i: number) => `${getX(i)},${getY(d.bayesian_avg)}`).join(' ');
+                    let rubricPoints = '';
+                    let bayesianPoints = '';
+                    let areaPolygonPoints = '';
+
+                    if (count === 1) {
+                      const yScore = getY(rawSeries[0].score);
+                      const yBayes = getY(rawSeries[0].bayesian_avg);
+                      rubricPoints = `${padLeft},${yScore} ${width - padRight},${yScore}`;
+                      bayesianPoints = `${padLeft},${yBayes} ${width - padRight},${yBayes}`;
+                      areaPolygonPoints = `${padLeft},${height - padBottom} ${padLeft},${yScore} ${width - padRight},${yScore} ${width - padRight},${height - padBottom}`;
+                    } else if (count > 1) {
+                      rubricPoints = rawSeries.map((d: any, i: number) => `${getX(i)},${getY(d.score)}`).join(' ');
+                      bayesianPoints = rawSeries.map((d: any, i: number) => `${getX(i)},${getY(d.bayesian_avg)}`).join(' ');
+                      areaPolygonPoints = `${padLeft},${height - padBottom} ${rubricPoints} ${width - padRight},${height - padBottom}`;
+                    }
 
                     const activeHoverItem = (hoveredTrajectoryIndex !== null && hoveredTrajectoryIndex < rawSeries.length) ? rawSeries[hoveredTrajectoryIndex] : null;
 
@@ -3374,16 +3366,41 @@ export default function App() {
                             90% EXEMPLARY STANDARD
                           </text>
 
+                          {/* Zero-State Standby Baseline projection */}
+                          {isNewTrack && (
+                            <>
+                              <line
+                                x1={padLeft}
+                                y1={getY(80)}
+                                x2={width - padRight}
+                                y2={getY(80)}
+                                stroke="rgba(99, 102, 241, 0.35)"
+                                strokeWidth="1.5"
+                                strokeDasharray="6 4"
+                              />
+                              <text
+                                x={width / 2}
+                                y={getY(80) - 8}
+                                textAnchor="middle"
+                                fill="rgba(192, 193, 255, 0.7)"
+                                fontSize="10"
+                                fontFamily="var(--font-mono)"
+                              >
+                                ✦ Initial Calibration Baseline Projection (80%)
+                              </text>
+                            </>
+                          )}
+
                           {/* Underfill Area */}
-                          {(trajectoryMetricView === 'both' || trajectoryMetricView === 'rubric') && (
+                          {count > 0 && (trajectoryMetricView === 'both' || trajectoryMetricView === 'rubric') && (
                             <polygon
-                              points={`${padLeft},${height - padBottom} ${rubricPoints} ${width - padRight},${height - padBottom}`}
+                              points={areaPolygonPoints}
                               fill="url(#areaGradient)"
                             />
                           )}
 
                           {/* Raw Rubric Line */}
-                          {(trajectoryMetricView === 'both' || trajectoryMetricView === 'rubric') && (
+                          {count > 0 && (trajectoryMetricView === 'both' || trajectoryMetricView === 'rubric') && (
                             <polyline
                               fill="none"
                               stroke="var(--accent-emerald)"
@@ -3395,7 +3412,7 @@ export default function App() {
                           )}
 
                           {/* Bayesian Moving Average Line */}
-                          {(trajectoryMetricView === 'both' || trajectoryMetricView === 'bayesian') && (
+                          {count > 0 && (trajectoryMetricView === 'both' || trajectoryMetricView === 'bayesian') && (
                             <polyline
                               fill="none"
                               stroke="var(--accent-cyan)"
@@ -3491,6 +3508,46 @@ export default function App() {
                           })}
                         </svg>
 
+                        {/* Zero-State Interactive Callout */}
+                        {isNewTrack && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              background: 'rgba(6, 14, 32, 0.88)',
+                              border: '1px solid rgba(99, 102, 241, 0.4)',
+                              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(99, 102, 241, 0.2)',
+                              borderRadius: 10,
+                              padding: '14px 22px',
+                              textAlign: 'center',
+                              backdropFilter: 'blur(8px)',
+                              zIndex: 10,
+                              maxWidth: 420,
+                              width: '90%',
+                            }}
+                          >
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>
+                              ⚡ Ready to Plot Trajectory Curve
+                            </div>
+                            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+                              Solve your first scenario in {selectedTrack} to start plotting continuous rubric points and Bayesian calibration.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const firstTopic = languages.find(l => l.name.toLowerCase() === selectedTrack.toLowerCase())?.topics[0]?.slug || selectedTopicSlug;
+                                handleStartPracticeSession(firstTopic, 'TOPIC');
+                              }}
+                              className="btn-primary-gradient"
+                              style={{ padding: '6px 16px', fontSize: 11, fontWeight: 600 }}
+                            >
+                              ⚡ Start First Challenge ({selectedTrack})
+                            </button>
+                          </div>
+                        )}
+
                         {/* Interactive Floating HUD Tooltip */}
                         {activeHoverItem && (
                           <div
@@ -3570,6 +3627,8 @@ export default function App() {
                       background: 'rgba(15, 23, 42, 0.85)',
                       display: 'flex',
                       flexDirection: 'column',
+                      flexShrink: 0,
+                      minHeight: 'min-content',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -3922,6 +3981,8 @@ export default function App() {
                       flexDirection: 'column',
                       justifyContent: 'space-between',
                       position: 'relative',
+                      flexShrink: 0,
+                      minHeight: 'min-content',
                     }}
                   >
                     <div>
@@ -4118,7 +4179,7 @@ export default function App() {
                 {/* ========================================================================= */}
                 {/* 4. ADAPTIVE AI SKILL CALIBRATION MATRIX WITH DEEP-DIVE INSPECTION         */}
                 {/* ========================================================================= */}
-                <div className="forge-card" style={{ padding: 24, background: 'rgba(15, 23, 42, 0.85)' }}>
+                <div className="forge-card" style={{ padding: 24, background: 'rgba(15, 23, 42, 0.85)', flexShrink: 0, minHeight: 'min-content' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, paddingBottom: 16, borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -4160,7 +4221,29 @@ export default function App() {
                   {/* Calibration Topic Rows with Accordion Expansion */}
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {(() => {
-                      const matrix = analyticsData?.calibration_matrix || [];
+                      const rawMatrix = (analyticsData?.calibration_matrix && analyticsData.calibration_matrix.length > 0)
+                        ? analyticsData.calibration_matrix
+                        : (() => {
+                            const currentTrackLang = languages.find(l => l.name.toLowerCase() === selectedTrack.toLowerCase());
+                            const topicsList = currentTrackLang?.topics || [];
+                            return topicsList.map((t, idx) => ({
+                              topic_id: t.id,
+                              topic_slug: t.slug,
+                              name: t.name,
+                              score: idx === 0 ? 80 : 0,
+                              confidence: idx === 0 ? 75 : 0,
+                              status: idx === 0 ? 'PRACTICING' : 'CALIBRATED',
+                              solved_count: 0,
+                              last_practiced: 'Ready',
+                              tags: [t.slug, 'adaptive-curriculum'],
+                              sub_skills: [
+                                { name: `${t.name} Invariants`, score: idx === 0 ? 80 : 0 },
+                                { name: 'Boundary Conditions', score: idx === 0 ? 75 : 0 },
+                                { name: 'Defensive Input Guarding', score: idx === 0 ? 85 : 0 },
+                              ],
+                            }));
+                          })();
+                      const matrix = rawMatrix;
                       const filtered = matrix.filter((item: any) => {
                         if (matrixFilter === 'ALL') return true;
                         return item.status === matrixFilter;
@@ -4326,7 +4409,7 @@ export default function App() {
                 {/* ========================================================================= */}
                 {/* 5. LIVE RUBRIC EVIDENCE LOG WITH TIER FILTERS & SEARCH                    */}
                 {/* ========================================================================= */}
-                <div className="forge-card" style={{ padding: 24, background: 'rgba(15, 23, 42, 0.85)' }}>
+                <div className="forge-card" style={{ padding: 24, background: 'rgba(15, 23, 42, 0.85)', flexShrink: 0, minHeight: 'min-content' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, paddingBottom: 16, borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -4421,8 +4504,22 @@ export default function App() {
                           if (filtered.length === 0) {
                             return (
                               <tr>
-                                <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--text-dim)' }}>
-                                  No evidence proofs match the current criteria.
+                                <td colSpan={6} style={{ padding: '36px 20px', textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                                    <span style={{ fontSize: 24 }}>📜</span>
+                                    <div style={{ color: '#ffffff', fontWeight: 600, fontSize: 13 }}>No Rubric Evidence Proofs Recorded Yet</div>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 12, maxWidth: 440, margin: 0, lineHeight: 1.5 }}>
+                                      Every challenge submitted is surgically evaluated by AI against correctness invariants, bounds, and defensive preconditions. Complete a scenario to log proofs.
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => setWorkspaceTab('arena')}
+                                      className="btn-primary-gradient"
+                                      style={{ padding: '6px 16px', fontSize: 11, marginTop: 4 }}
+                                    >
+                                      ⚡ Solve First Scenario
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
@@ -4492,6 +4589,8 @@ export default function App() {
                     flexDirection: 'column',
                     gap: 18,
                     overflow: 'visible',
+                    flexShrink: 0,
+                    minHeight: 'min-content',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -4688,11 +4787,8 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Bottom Clearance Spacer so nothing is clipped */}
-                <div style={{ height: 100, width: '100%', flexShrink: 0 }}></div>
-
                 {/* ========================================================================= */}
-                {/* 7. ADAPTIVE DIAGNOSTIC & REMEDIATION LAUNCHER                 */}
+                {/* 7. ADAPTIVE COMPETENCY INSIGHT & REMEDIATION LAUNCHER                      */}
                 {/* ========================================================================= */}
                 <div
                   className="forge-card"
@@ -4704,13 +4800,15 @@ export default function App() {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 16,
+                    flexShrink: 0,
+                    minHeight: 'min-content',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 20 }}>⚡</span>
                       <h3 style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                        {analyticsData?.diagnostic_insight?.title || 'Adaptive Skill Remediation'}
+                        {analyticsData?.diagnostic_insight?.title || 'Adaptive Competency Insight'}
                       </h3>
                     </div>
                     <span className="tag-badge tag-emerald" style={{ fontSize: 9 }}>CLOSED-LOOP AI FEEDBACK</span>
@@ -4718,13 +4816,13 @@ export default function App() {
 
                   <p style={{ color: '#cbd5e1', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                     {analyticsData?.diagnostic_insight?.analysis ||
-                      'High proficiency in conditional branching and defensive validation. Primary growth vector: Boundary conditions on empty collection slicing and defensive invariant boundary guards.'}
+                      `Proficiency trajectory active across ${selectedTrack} curriculum. Target competency focus: Foundations & Algorithmic Invariants.`}
                   </p>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, paddingTop: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <span className="tag-badge tag-indigo" style={{ padding: '4px 10px', fontSize: 11 }}>
-                        Target: {analyticsData?.diagnostic_insight?.target_topic_name || 'Defensive Edge-Cases'}
+                        Target: {analyticsData?.diagnostic_insight?.target_topic_name || 'Foundations & Invariants'}
                       </span>
                       <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
                         Estimated time: ~12 mins • 5 Custom Problems
@@ -4755,6 +4853,9 @@ export default function App() {
                     </button>
                   </div>
                 </div>
+
+                {/* Bottom Clearance Spacer so nothing is clipped by fixed mobile navigation */}
+                <div style={{ height: 120, width: '100%', flexShrink: 0 }}></div>
 
               </div>
 
