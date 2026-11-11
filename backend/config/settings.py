@@ -179,11 +179,24 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# Session & Cookie Lifespan (1 Day = 86,400 seconds)
-SESSION_COOKIE_AGE = 86400  # 24 hours
+# Session & Cookie Lifespan (Multi-device concurrent sessions supported, 30 days)
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days persistent multi-device session
 SESSION_SAVE_EVERY_REQUEST = False
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Email Configuration (SMTP for Password Reset & Verification OTPs)
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@skillforge.io')
+EMAIL_TIMEOUT = 10
 
 # REST Framework settings
 REST_FRAMEWORK = {

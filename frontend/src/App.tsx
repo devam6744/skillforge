@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LanguageIcon } from './components/LanguageIcon';
+import { ProfileModal } from './components/ProfileModal';
 import { api } from './services/api';
 import type { User, ProgrammingLanguage, PracticeSession, SessionChallengeData } from './types';
 
@@ -11,13 +12,24 @@ export default function App() {
 
   // Visitor Auth Modal state
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot-password'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // Forgot password & OTP verification state
+  const [forgotStep, setForgotStep] = useState<'email' | 'otp'>('email');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotNewPasswordConfirm, setForgotNewPasswordConfirm] = useState('');
+  const [forgotCountdown, setForgotCountdown] = useState(0);
+  const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
+
+  // Profile management modal
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   // Landing page interactive snippet tab
   const [heroSnippetTab, setHeroSnippetTab] = useState<'python' | 'cpp' | 'java' | 'javascript'>('python');
@@ -689,15 +701,99 @@ export default function App() {
       .finally(() => setInitialLoading(false));
   }, []);
 
-  const openAuth = (mode: 'signin' | 'signup') => {
+  // OTP Countdown timer
+  useEffect(() => {
+    if (forgotCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setForgotCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [forgotCountdown]);
+
+  const openAuth = (mode: 'signin' | 'signup' | 'forgot-password') => {
     setAuthMode(mode);
     setAuthError(null);
+    setForgotSuccess(null);
+    setForgotStep('email');
+    setForgotOtp('');
+    setForgotNewPassword('');
+    setForgotNewPasswordConfirm('');
     setAuthModalOpen(true);
   };
 
   const closeAuth = () => {
     setAuthModalOpen(false);
     setAuthError(null);
+    setForgotSuccess(null);
+    setForgotStep('email');
+  };
+
+  const handleRequestOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      setAuthError('Please enter your registered email address.');
+      return;
+    }
+    setAuthError(null);
+    setForgotSuccess(null);
+    setAuthLoading(true);
+
+    try {
+      const res = await api.auth.requestPasswordResetOtp(email.trim());
+      setForgotSuccess(res.message || 'Verification code sent to your email.');
+      setForgotStep('otp');
+      setForgotCountdown(600); // 10 minutes
+    } catch (err: any) {
+      console.error('Request OTP failed:', err);
+      const msg = err.details?.email?.[0] || err.message || 'Failed to send verification code.';
+      setAuthError(msg);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleConfirmResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (forgotOtp.length !== 6) {
+      setAuthError('Please enter the 6-digit verification code.');
+      return;
+    }
+    if (forgotNewPassword.length < 8) {
+      setAuthError('New password must be at least 8 characters long.');
+      return;
+    }
+    if (forgotNewPassword !== forgotNewPasswordConfirm) {
+      setAuthError('New passwords do not match.');
+      return;
+    }
+
+    setAuthError(null);
+    setAuthLoading(true);
+
+    try {
+      const res = await api.auth.confirmPasswordReset(
+        email.trim(),
+        forgotOtp.trim(),
+        forgotNewPassword,
+        forgotNewPasswordConfirm
+      );
+      setCurrentUser(res.user);
+      closeAuth();
+      window.location.hash = '#/workspace';
+      setNotification('🎉 Password reset successfully! Welcome back.');
+      setTimeout(() => setNotification(null), 5000);
+    } catch (err: any) {
+      console.error('Confirm password reset failed:', err);
+      const msg =
+        err.details?.otp?.[0] ||
+        err.details?.new_password?.[0] ||
+        err.details?.email?.[0] ||
+        err.message ||
+        'Password reset failed. Please check the code and try again.';
+      setAuthError(msg);
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -1251,6 +1347,7 @@ export default function App() {
           {/* User Profile & Connection Status (No noisy DB badge) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div
+              onClick={() => setProfileModalOpen(true)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1259,14 +1356,17 @@ export default function App() {
                 borderRadius: 8,
                 background: 'rgba(255, 255, 255, 0.04)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
               }}
+              title="Click to view & edit your profile, password & active devices"
             >
               <div
                 style={{
                   width: 24,
                   height: 24,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1280,10 +1380,31 @@ export default function App() {
               <span style={{ fontSize: 12, fontWeight: 600, color: '#ffffff' }}>
                 {currentUser.profile?.display_name || currentUser.email.split('@')[0]}
               </span>
-              <span className="tag-badge tag-indigo" style={{ padding: '1px 6px', fontSize: 9 }}>
+              <span className="tag-badge tag-emerald" style={{ padding: '1px 6px', fontSize: 9 }}>
                 {currentUser.profile?.initial_skill_level || 'STUDENT'}
               </span>
             </div>
+
+            <button
+              onClick={() => setProfileModalOpen(true)}
+              style={{
+                background: 'rgba(16, 185, 129, 0.08)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                color: '#10b981',
+                padding: '5px 12px',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+              }}
+              title="Account & Profile Settings"
+            >
+              <span>👤</span> Profile
+            </button>
 
             <button
               onClick={handleLogout}
@@ -4892,7 +5013,7 @@ export default function App() {
         </div>
       </footer>
 
-      {/* AUTH MODAL (Sign In / Register) */}
+      {/* AUTH MODAL (Sign In / Register / Forgot Password OTP) */}
       {authModalOpen && (
         <div className="modal-overlay" onClick={closeAuth}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -4902,10 +5023,18 @@ export default function App() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div>
                   <h3 style={{ fontSize: 22, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
-                    {authMode === 'signin' ? 'Sign In to SkillForge' : 'Create Free Developer Account'}
+                    {authMode === 'signin'
+                      ? 'Sign In to SkillForge'
+                      : authMode === 'signup'
+                      ? 'Create Free Developer Account'
+                      : 'Reset Password via OTP'}
                   </h3>
                   <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
-                    {authMode === 'signin' ? 'Access your workspace & adaptive progress.' : 'Get personalized AI code reviews today.'}
+                    {authMode === 'signin'
+                      ? 'Access your workspace & adaptive progress.'
+                      : authMode === 'signup'
+                      ? 'Get personalized AI code reviews today.'
+                      : 'Verify your email to securely reset your password.'}
                   </p>
                 </div>
                 <button onClick={closeAuth} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 22, cursor: 'pointer' }}>
@@ -4913,124 +5042,341 @@ export default function App() {
                 </button>
               </div>
 
-
-              {/* Tab Switcher */}
-              <div style={{ display: 'flex', background: 'rgba(8, 12, 28, 0.8)', padding: 4, borderRadius: 8, marginBottom: 20 }}>
-                <button
-                  type="button"
-                  onClick={() => { setAuthMode('signin'); setAuthError(null); }}
-                  style={{
-                    flex: 1,
-                    padding: '8px',
-                    borderRadius: 6,
-                    border: 'none',
-                    fontFamily: 'var(--font-heading)',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    background: authMode === 'signin' ? 'var(--gradient-brand)' : 'transparent',
-                    color: authMode === 'signin' ? '#ffffff' : 'var(--text-muted)',
-                  }}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setAuthMode('signup'); setAuthError(null); }}
-                  style={{
-                    flex: 1,
-                    padding: '8px',
-                    borderRadius: 6,
-                    border: 'none',
-                    fontFamily: 'var(--font-heading)',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    background: authMode === 'signup' ? 'var(--gradient-brand)' : 'transparent',
-                    color: authMode === 'signup' ? '#ffffff' : 'var(--text-muted)',
-                  }}
-                >
-                  Create Account
-                </button>
-              </div>
-
-              {authError && (
-                <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', color: 'var(--accent-rose)', fontSize: 13, marginBottom: 16 }}>
-                  {authError}
+              {/* Tab Switcher (Sign In vs Register) */}
+              {authMode !== 'forgot-password' && (
+                <div style={{ display: 'flex', background: 'rgba(8, 12, 28, 0.8)', padding: 4, borderRadius: 8, marginBottom: 20 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('signin'); setAuthError(null); }}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: 6,
+                      border: 'none',
+                      fontFamily: 'var(--font-heading)',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: authMode === 'signin' ? 'var(--gradient-brand)' : 'transparent',
+                      color: authMode === 'signin' ? '#ffffff' : 'var(--text-muted)',
+                    }}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('signup'); setAuthError(null); }}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: 6,
+                      border: 'none',
+                      fontFamily: 'var(--font-heading)',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: authMode === 'signup' ? 'var(--gradient-brand)' : 'transparent',
+                      color: authMode === 'signup' ? '#ffffff' : 'var(--text-muted)',
+                    }}
+                  >
+                    Create Account
+                  </button>
                 </div>
               )}
 
-              <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {authMode === 'signup' && (
+              {authError && (
+                <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', color: 'var(--accent-rose)', fontSize: 13, marginBottom: 16 }}>
+                  ⚠️ {authError}
+                </div>
+              )}
+
+              {forgotSuccess && (
+                <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', fontSize: 13, marginBottom: 16 }}>
+                  ✅ {forgotSuccess}
+                </div>
+              )}
+
+              {/* STANDARD SIGN IN / REGISTER FORM */}
+              {authMode !== 'forgot-password' ? (
+                <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {authMode === 'signup' && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+                        DISPLAY NAME
+                      </label>
+                      <input
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        placeholder="e.g. Linus Torvalds"
+                        className="input-field"
+                      />
+                    </div>
+                  )}
+
                   <div>
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
-                      DISPLAY NAME
+                      EMAIL ADDRESS *
                     </label>
                     <input
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="e.g. Linus Torvalds"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="developer@skillforge.io"
                       className="input-field"
                     />
                   </div>
-                )}
 
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
-                    EMAIL ADDRESS *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="developer@skillforge.io"
-                    className="input-field"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
-                    PASSWORD *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••••••"
-                    className="input-field"
-                  />
-                </div>
-
-                {authMode === 'signup' && (
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
-                      CONFIRM PASSWORD *
-                    </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+                        PASSWORD *
+                      </label>
+                      {authMode === 'signin' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAuthMode('forgot-password');
+                            setForgotStep('email');
+                            setAuthError(null);
+                            setForgotSuccess(null);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#10b981',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            padding: 0,
+                            textDecoration: 'underline',
+                          }}
+                        >
+                          Forgot password?
+                        </button>
+                      )}
+                    </div>
                     <input
                       type="password"
                       required
-                      value={passwordConfirm}
-                      onChange={(e) => setPasswordConfirm(e.target.value)}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••••••"
                       className="input-field"
                     />
                   </div>
-                )}
 
-                <button type="submit" className="btn-primary-gradient" disabled={authLoading} style={{ marginTop: 10 }}>
-                  {authLoading
-                    ? 'Processing...'
-                    : authMode === 'signin'
-                    ? 'Sign In to Workspace →'
-                    : 'Create Free Account →'}
-                </button>
-              </form>
+                  {authMode === 'signup' && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+                        CONFIRM PASSWORD *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={passwordConfirm}
+                        onChange={(e) => setPasswordConfirm(e.target.value)}
+                        placeholder="••••••••••••••••"
+                        className="input-field"
+                      />
+                    </div>
+                  )}
+
+                  <button type="submit" className="btn-primary-gradient" disabled={authLoading} style={{ marginTop: 10 }}>
+                    {authLoading
+                      ? 'Processing...'
+                      : authMode === 'signin'
+                      ? 'Sign In to Workspace →'
+                      : 'Create Free Account →'}
+                  </button>
+                </form>
+              ) : (
+                /* FORGOT PASSWORD VIA OTP FLOW */
+                <div>
+                  {forgotStep === 'email' ? (
+                    <form onSubmit={handleRequestOtp} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+                          ENTER YOUR REGISTERED EMAIL *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="your.email@example.com"
+                          className="input-field"
+                        />
+                        <p style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.4 }}>
+                          We will send a secure 6-digit OTP verification code to this email address via SMTP.
+                        </p>
+                      </div>
+
+                      <button type="submit" className="btn-primary-gradient" disabled={authLoading} style={{ marginTop: 6 }}>
+                        {authLoading ? 'Sending Verification Code...' : 'Send 6-Digit OTP Code →'}
+                      </button>
+
+                      <div style={{ textAlign: 'center', marginTop: 12 }}>
+                        <button
+                          type="button"
+                          onClick={() => { setAuthMode('signin'); setAuthError(null); setForgotSuccess(null); }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#94a3b8',
+                            fontSize: 13,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ← Back to Sign In
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    /* STEP 2: ENTER OTP & NEW PASSWORD */
+                    <form onSubmit={handleConfirmResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <div
+                        style={{
+                          padding: '10px 14px',
+                          borderRadius: 8,
+                          backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                          border: '1px solid rgba(16, 185, 129, 0.2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: 12,
+                        }}
+                      >
+                        <span style={{ color: '#94a3b8' }}>Sent to: <strong style={{ color: '#f8fafc' }}>{email}</strong></span>
+                        <button
+                          type="button"
+                          onClick={() => { setForgotStep('email'); setAuthError(null); }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#10b981',
+                            fontSize: 12,
+                            cursor: 'pointer',
+                            textDecoration: 'underline',
+                          }}
+                        >
+                          Edit Email
+                        </button>
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <label style={{ fontSize: 12, fontWeight: 700, color: '#f8fafc' }}>
+                            6-DIGIT VERIFICATION CODE (OTP) *
+                          </label>
+                          <span style={{ fontSize: 11, color: forgotCountdown > 0 ? '#10b981' : '#f87171', fontWeight: 600 }}>
+                            {forgotCountdown > 0
+                              ? `Expires in ${Math.floor(forgotCountdown / 60)}:${(forgotCountdown % 60).toString().padStart(2, '0')}`
+                              : 'Code Expired'}
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          maxLength={6}
+                          value={forgotOtp}
+                          onChange={(e) => setForgotOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                          placeholder="123456"
+                          className="input-field"
+                          style={{
+                            textAlign: 'center',
+                            fontSize: 22,
+                            letterSpacing: 8,
+                            fontWeight: 700,
+                            fontFamily: 'var(--font-mono)',
+                            color: '#10b981',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+                          NEW PASSWORD * (MIN 8 CHARACTERS)
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          value={forgotNewPassword}
+                          onChange={(e) => setForgotNewPassword(e.target.value)}
+                          placeholder="••••••••••••••••"
+                          className="input-field"
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+                          CONFIRM NEW PASSWORD *
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          value={forgotNewPasswordConfirm}
+                          onChange={(e) => setForgotNewPasswordConfirm(e.target.value)}
+                          placeholder="••••••••••••••••"
+                          className="input-field"
+                        />
+                      </div>
+
+                      <button type="submit" className="btn-primary-gradient" disabled={authLoading} style={{ marginTop: 6 }}>
+                        {authLoading ? 'Verifying & Resetting Password...' : 'Reset Password & Enter Workspace →'}
+                      </button>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, fontSize: 12 }}>
+                        <button
+                          type="button"
+                          onClick={() => { setAuthMode('signin'); setAuthError(null); setForgotSuccess(null); }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#94a3b8',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ← Back to Sign In
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleRequestOtp}
+                          disabled={authLoading || forgotCountdown > 540}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: forgotCountdown > 540 ? '#64748b' : '#10b981',
+                            cursor: forgotCountdown > 540 ? 'not-allowed' : 'pointer',
+                            textDecoration: 'underline',
+                          }}
+                        >
+                          Resend Code
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* USER PROFILE & MULTI-DEVICE MANAGEMENT MODAL */}
+      {currentUser && (
+        <ProfileModal
+          isOpen={profileModalOpen}
+          onClose={() => setProfileModalOpen(false)}
+          currentUser={currentUser}
+          onUpdateUser={setCurrentUser}
+          onNotification={(msg) => {
+            setNotification(msg);
+            setTimeout(() => setNotification(null), 4000);
+          }}
+        />
       )}
     </div>
   );

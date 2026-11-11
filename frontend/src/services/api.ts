@@ -79,6 +79,32 @@ export const api = {
         method: 'POST',
       }),
     me: () => request<{ user: User }>('/auth/me/'),
+    requestPasswordResetOtp: (email: string) =>
+      request<{ message: string; email: string; expires_in_minutes: number }>('/auth/password-reset/request-otp/', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
+    verifyPasswordResetOtp: (email: string, otp: string) =>
+      request<{ valid: boolean; message: string }>('/auth/password-reset/verify-otp/', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp }),
+      }),
+    confirmPasswordReset: (email: string, otp: string, new_password: string, new_password_confirm: string) =>
+      request<{ message: string; user: User }>('/auth/password-reset/confirm/', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp, new_password, new_password_confirm }),
+      }),
+    changePassword: (current_password: string, new_password: string, new_password_confirm: string) =>
+      request<{ message: string }>('/auth/password/change/', {
+        method: 'POST',
+        body: JSON.stringify({ current_password, new_password, new_password_confirm }),
+      }),
+    getMultiDeviceSessions: () =>
+      request<{ current_device: any; other_active_devices_count: number; total_active_devices: number }>('/auth/sessions/multi-device/'),
+    logoutOtherDevices: () =>
+      request<{ message: string; revoked_count: number }>('/auth/sessions/multi-device/', {
+        method: 'POST',
+      }),
   },
   profile: {
     get: () => request<any>('/profile/'),

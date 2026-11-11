@@ -149,3 +149,106 @@ class GoogleAuthSerializer(serializers.Serializer):
                 }
                 return attrs
             raise serializers.ValidationError({"credential": f"Invalid Google ID token: {str(e)}"})
+
+
+class RequestPasswordResetOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        normalized_email = value.strip().lower()
+        if not User.objects.filter(email=normalized_email).exists():
+            raise serializers.ValidationError("No account found with this email address.")
+        return normalized_email
+
+
+class VerifyPasswordResetOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(min_length=6, max_length=6)
+
+    def validate(self, attrs):
+        from .models import PasswordResetOTP
+        email = attrs.get('email', '').strip().lower()
+        otp = attrs.get('otp', '').strip()
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({"email": "User does not exist."})
+
+        otp_record = PasswordResetOTP.objects.filter(
+            user=user,
+            otp=otp,
+            is_used=False
+        ).order_by('-created_at').first()
+
+        if not otp_record or not otp_record.is_valid():
+            raise serializers.ValidationError({"otp": "Invalid or expired verification code."})
+
+        attrs['user'] = user
+        attrs['otp_record'] = otp_record
+        return attrs
+
+
+class ConfirmPasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(min_length=6, max_length=6)
+    new_password = serializers.CharField(write_only=True, min_length=8)
+    new_password_confirm = serializers.CharField(write_only=True, min_length=8)
+
+    def validate(self, attrs):
+        from .models import PasswordResetOTP
+        email = attrs.get('email', '').strip().lower()
+        otp = attrs.get('otp', '').strip()
+        new_password = attrs.get('new_password')
+        new_password_confirm = attrs.get('new_password_confirm')
+
+        if new_password != new_password_confirm:
+            raise serializers.ValidationError({"new_password_confirm": "Passwords do not match."})
+
+        try:
+            validate_password(new_password)
+        except DjangoValidationError as err:
+            raise serializers.ValidationError({"new_password": list(err.messages)})
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({"email": "User does not exist."})
+
+        otp_record = PasswordResetOTP.objects.filter(
+            user=user,
+            otp=otp,
+            is_used=False
+        ).order_by('-created_at').first()
+
+        if not otp_record or not otp_record.is_valid():
+            raise serializers.ValidationError({"otp": "Invalid or expired verification code."})
+
+        attrs['user'] = user
+        attrs['otp_record'] = otp_record
+        return attrs
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True, min_length=8)
+    new_password_confirm = serializers.CharField(write_only=True, min_length=8)
+
+    def validate(self, attrs):
+        user = self.context.get('request').user
+        current_password = attrs.get('current_password')
+        new_password = attrs.get('new_password')
+        new_password_confirm = attrs.get('new_password_confirm')
+
+        if not user.check_password(current_password):
+            raise serializers.ValidationError({"current_password": "The current password you entered is incorrect."})
+
+        if new_password != new_password_confirm:
+            raise serializers.ValidationError({"new_password_confirm": "New passwords do not match."})
+
+        try:
+            validate_password(new_password, user=user)
+        except DjangoValidationError as err:
+            raise serializers.ValidationError({"new_password": list(err.messages)})
+
+        return attrs
