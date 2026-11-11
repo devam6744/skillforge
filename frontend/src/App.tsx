@@ -5316,30 +5316,174 @@ export default function App() {
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* PROFESSIONAL FOOTER WITH DEVELOPER DETAILS & CONTACT */}
       <footer
         style={{
-          borderTop: '1px solid var(--border-subtle)',
-          background: 'rgba(5, 8, 20, 0.95)',
-          padding: '24px 32px',
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'rgba(5, 8, 20, 0.98)',
+          padding: isMobile ? '28px 18px 24px' : '36px 32px 30px',
           marginTop: 'auto',
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 16,
-          fontSize: 13,
-          color: 'var(--text-dim)',
-          fontFamily: 'var(--font-mono)',
+          flexDirection: 'column',
+          gap: 24,
         }}
       >
-        <div>© 2026 SkillForge Inc. AI-Powered Adaptive Coding Practice Platform.</div>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <span>PostgreSQL (Supabase)</span>
-          <span>•</span>
-          <span>SkillForge AI Engine</span>
-          <span>•</span>
-          <span>Django REST Framework</span>
+        <div
+          style={{
+            maxWidth: 1240,
+            width: '100%',
+            margin: '0 auto',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: 24,
+          }}
+        >
+          {/* Brand Info */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 14,
+                  color: '#ffffff',
+                  boxShadow: '0 0 12px rgba(99, 102, 241, 0.35)',
+                }}
+              >
+                ⚡
+              </div>
+              <span style={{ fontWeight: 800, fontSize: 18, color: '#ffffff', letterSpacing: '-0.02em' }}>
+                SkillForge
+              </span>
+              <span className="tag-badge tag-indigo" style={{ fontSize: 9 }}>v4.2.0</span>
+            </div>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0, maxWidth: 380, lineHeight: 1.5 }}>
+              Intelligent adaptive coding platform powered by closed-loop AI evaluation, continuous invariant telemetry & Bayesian skill tracing.
+            </p>
+          </div>
+
+          {/* Developer Contact & Social Details */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 700 }}>
+              ✦ Developed & Engineered by
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Devam Mandli</span>
+              <span className="tag-badge tag-emerald" style={{ fontSize: 10 }}>Creator</span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
+              {/* Email Link */}
+              <a
+                href="mailto:mandlidevam9@gmail.com"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 6,
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#cbd5e1',
+                  fontSize: 12,
+                  fontFamily: 'var(--font-mono)',
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                title="Send Email to Devam Mandli"
+              >
+                <span>✉️</span>
+                <span>mandlidevam9@gmail.com</span>
+              </a>
+
+              {/* LinkedIn Link */}
+              <a
+                href="https://www.linkedin.com/in/devam-mandli"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 6,
+                  background: 'rgba(10, 102, 194, 0.15)',
+                  border: '1px solid rgba(10, 102, 194, 0.35)',
+                  color: '#60a5fa',
+                  fontSize: 12,
+                  fontFamily: 'var(--font-mono)',
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                title="View LinkedIn Profile"
+              >
+                <span>💼</span>
+                <span>devam-mandli</span>
+              </a>
+
+              {/* GitHub Link */}
+              <a
+                href="https://github.com/devam6744"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 6,
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: '#f1f5f9',
+                  fontSize: 12,
+                  fontFamily: 'var(--font-mono)',
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                title="View GitHub Profile"
+              >
+                <span>🐙</span>
+                <span>devam6744</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Divider & Copyright Substrip */}
+        <div
+          style={{
+            maxWidth: 1240,
+            width: '100%',
+            margin: '0 auto',
+            paddingTop: 18,
+            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+            fontSize: 12,
+            color: 'var(--text-dim)',
+            fontFamily: 'var(--font-mono)',
+          }}
+        >
+          <div>© 2026 SkillForge Inc. All rights reserved.</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <span>PostgreSQL (Supabase)</span>
+            <span>•</span>
+            <span>Gemini AI Invariant Engine</span>
+            <span>•</span>
+            <span>Django REST Framework</span>
+            <span>•</span>
+            <span>React + Vite</span>
+          </div>
         </div>
       </footer>
 

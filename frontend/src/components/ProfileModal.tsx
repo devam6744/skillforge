@@ -803,6 +803,86 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Developer Contact & Engineering Support Strip */}
+          <div
+            style={{
+              marginTop: 24,
+              padding: '14px 16px',
+              borderRadius: 10,
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: '#38bdf8', textTransform: 'uppercase', fontWeight: 700 }}>
+                ✦ Platform Support & Engineering
+              </div>
+              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                Developed & Engineered by <strong style={{ color: '#ffffff' }}>Devam Mandli</strong>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <a
+                href="mailto:mandlidevam9@gmail.com"
+                style={{
+                  fontSize: 11,
+                  fontFamily: 'var(--font-mono)',
+                  color: '#cbd5e1',
+                  textDecoration: 'none',
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                }}
+                title="Contact Developer via Email"
+              >
+                ✉️ mandlidevam9@gmail.com
+              </a>
+              <a
+                href="https://www.linkedin.com/in/devam-mandli"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: 11,
+                  fontFamily: 'var(--font-mono)',
+                  color: '#60a5fa',
+                  textDecoration: 'none',
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  background: 'rgba(10, 102, 194, 0.15)',
+                  border: '1px solid rgba(10, 102, 194, 0.3)',
+                }}
+                title="LinkedIn Profile"
+              >
+                💼 LinkedIn
+              </a>
+              <a
+                href="https://github.com/devam6744"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: 11,
+                  fontFamily: 'var(--font-mono)',
+                  color: '#f1f5f9',
+                  textDecoration: 'none',
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                }}
+                title="GitHub Profile"
+              >
+                🐙 devam6744
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
