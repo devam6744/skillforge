@@ -190,13 +190,39 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 
 # Email Configuration (SMTP for Password Reset & Verification OTPs)
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER') or os.getenv('email_user', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD') or os.getenv('email_password', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL') or (f"SkillForge Team <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "noreply@skillforge.io")
-EMAIL_TIMEOUT = 10
+EMAIL_HOST = (os.getenv('EMAIL_HOST') or 'smtp.gmail.com').strip().strip('"\'')
+try:
+    EMAIL_PORT = int((os.getenv('EMAIL_PORT') or '587').strip().strip('"\''))
+except ValueError:
+    EMAIL_PORT = 587
+
+EMAIL_USE_TLS = (os.getenv('EMAIL_USE_TLS') or 'True').strip().strip('"\'').lower() in ('true', '1', 't', 'yes')
+EMAIL_USE_SSL = (os.getenv('EMAIL_USE_SSL') or 'False').strip().strip('"\'').lower() in ('true', '1', 't', 'yes')
+
+# Flexible resolution for email user & app password (handles spaces, quotes, and common alias names)
+_resolved_email_user = (
+    os.getenv('EMAIL_HOST_USER') or
+    os.getenv('EMAIL_USER') or
+    os.getenv('email_user') or
+    os.getenv('GMAIL_USER') or
+    ''
+).strip().strip('"\'')
+
+_resolved_email_password = (
+    os.getenv('EMAIL_HOST_PASSWORD') or
+    os.getenv('EMAIL_PASSWORD') or
+    os.getenv('email_password') or
+    os.getenv('GMAIL_APP_PASSWORD') or
+    os.getenv('GMAIL_PASSWORD') or
+    ''
+).replace(' ', '').strip().strip('"\'')
+
+EMAIL_HOST_USER = _resolved_email_user
+EMAIL_HOST_PASSWORD = _resolved_email_password
+DEFAULT_FROM_EMAIL = (os.getenv('DEFAULT_FROM_EMAIL') or '').strip().strip('"\'') or (
+    f"SkillForge Team <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "noreply@skillforge.io"
+)
+EMAIL_TIMEOUT = 15
 
 # REST Framework settings
 REST_FRAMEWORK = {

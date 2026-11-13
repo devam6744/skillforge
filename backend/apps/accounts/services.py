@@ -1,19 +1,86 @@
 import logging
+import os
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from django.conf import settings
-from django.core.mail import send_mail
-from django.utils.html import strip_tags
 
 logger = logging.getLogger(__name__)
 
 
+def get_smtp_config() -> dict:
+    """
+    Dynamically extracts SMTP credentials and settings from Django settings
+    and environment variables with extensive alias handling and sanitization.
+    """
+    user = (
+        getattr(settings, 'EMAIL_HOST_USER', '') or
+        os.getenv('EMAIL_HOST_USER', '') or
+        os.getenv('EMAIL_USER', '') or
+        os.getenv('email_user', '') or
+        os.getenv('GMAIL_USER', '')
+    ).strip().strip('"\'')
+
+    password = (
+        getattr(settings, 'EMAIL_HOST_PASSWORD', '') or
+        os.getenv('EMAIL_HOST_PASSWORD', '') or
+        os.getenv('EMAIL_PASSWORD', '') or
+        os.getenv('email_password', '') or
+        os.getenv('GMAIL_APP_PASSWORD', '') or
+        os.getenv('GMAIL_PASSWORD', '')
+    ).replace(' ', '').strip().strip('"\'')
+
+    host = (
+        getattr(settings, 'EMAIL_HOST', '') or
+        os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    ).strip().strip('"\'') or 'smtp.gmail.com'
+
+    raw_port = getattr(settings, 'EMAIL_PORT', 587) or os.getenv('EMAIL_PORT', 587)
+    try:
+        port = int(str(raw_port).strip().strip('"\''))
+    except (ValueError, TypeError):
+        port = 587
+
+    use_tls = getattr(settings, 'EMAIL_USE_TLS', True)
+    use_ssl = getattr(settings, 'EMAIL_USE_SSL', False)
+    timeout = getattr(settings, 'EMAIL_TIMEOUT', 15) or 15
+
+    from_email = (
+        getattr(settings, 'DEFAULT_FROM_EMAIL', '') or
+        os.getenv('DEFAULT_FROM_EMAIL', '') or
+        (f"SkillForge Team <{user}>" if user else "SkillForge Team <noreply@skillforge.io>")
+    ).strip().strip('"\'')
+
+    return {
+        'user': user,
+        'password': password,
+        'host': host,
+        'port': port,
+        'use_tls': use_tls,
+        'use_ssl': use_ssl,
+        'timeout': timeout,
+        'from_email': from_email,
+    }
+
+
 def send_password_reset_otp_email(user, otp: str, expires_minutes: int = 10) -> tuple[bool, str | None]:
     """
-    Sends a styled OTP verification email to the user via Django SMTP.
-    Falls back gracefully if SMTP is unconfigured or encounters connection errors in dev.
+    Sends a styled OTP verification email to the user via SMTP.
+    Returns (True, None) on success, or (False, error_details) on failure.
     """
+    config = get_smtp_config()
+    user_email = user.email
+
+    if not config['user'] or not config['password']:
+        err_msg = (
+            "SMTP Configuration Error: EMAIL_HOST_USER or EMAIL_HOST_PASSWORD is not set. "
+            "Please configure EMAIL_HOST_USER and EMAIL_HOST_PASSWORD in your environment variables."
+        )
+        logger.error(f"[SMTP Error] {err_msg}")
+        return False, err_msg
+
     subject = f"Your SkillForge Password Reset Code: {otp}"
-    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@skillforge.io')
-    recipient_list = [user.email]
+    recipient_list = [user_email]
 
     html_message = f"""
     <!DOCTYPE html>
@@ -103,7 +170,7 @@ def send_password_reset_otp_email(user, otp: str, expires_minutes: int = 10) -> 
         <div class="badge">Security Verification</div>
         <h2>Password Reset Request</h2>
         <p>
-          Hello, we received a request to reset the password for your SkillForge account (<strong>{user.email}</strong>).
+          Hello, we received a request to reset the password for your SkillForge account (<strong>{user_email}</strong>).
         </p>
         <p>
           Please use the following 6-digit verification code to complete your password reset:
@@ -137,25 +204,44 @@ def send_password_reset_otp_email(user, otp: str, expires_minutes: int = 10) -> 
     )
 
     try:
-        # Check if SMTP user and app password are fully configured
-        has_smtp_creds = bool(
-            getattr(settings, 'EMAIL_HOST_USER', None) and 
-            getattr(settings, 'EMAIL_HOST_PASSWORD', None)
-        )
+        # Build MIME message with alternative parts
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = config['from_email']
+        msg['To'] = user_email
+        msg.attach(MIMEText(plain_message, 'plain', 'utf-8'))
+        msg.attach(MIMEText(html_message, 'html', 'utf-8'))
 
-        if not has_smtp_creds:
-            logger.error("[SMTP Error] EMAIL_HOST_USER or EMAIL_HOST_PASSWORD not configured.")
-            return False, "SMTP credentials not configured."
+        # Establish connection with configured timeout
+        if config['use_ssl'] or config['port'] == 465:
+            server = smtplib.SMTP_SSL(config['host'], config['port'], timeout=config['timeout'])
+        else:
+            server = smtplib.SMTP(config['host'], config['port'], timeout=config['timeout'])
+            if config['use_tls']:
+                server.starttls()
 
-        send_mail(
-            subject=subject,
-            message=plain_message,
-            from_email=from_email,
-            recipient_list=recipient_list,
-            html_message=html_message,
-            fail_silently=False,
-        )
+        server.login(config['user'], config['password'])
+        server.sendmail(config['user'], recipient_list, msg.as_string())
+        server.quit()
+
+        logger.info(f"Successfully sent password reset OTP email to {user_email}")
         return True, None
+
+    except smtplib.SMTPAuthenticationError as e:
+        err_msg = (
+            "Gmail SMTP Authentication Failed: Username or App Password rejected by Gmail. "
+            "Please ensure you are using a 16-character Google App Password (generated at myaccount.google.com/apppasswords) "
+            "and that EMAIL_HOST_USER and EMAIL_HOST_PASSWORD are set correctly in your environment variables."
+        )
+        logger.error(f"[SMTP Auth Error] {e}")
+        return False, err_msg
+
+    except (smtplib.SMTPConnectError, TimeoutError, OSError) as e:
+        err_msg = f"SMTP Connection Failed: Unable to connect to {config['host']}:{config['port']}. Details: {e}"
+        logger.error(f"[SMTP Connect Error] {err_msg}")
+        return False, err_msg
+
     except Exception as e:
-        logger.error(f"Failed to send OTP email: {e}")
-        return False, str(e)
+        err_msg = f"Failed to send email via SMTP: {str(e)}"
+        logger.error(f"[SMTP General Error] {err_msg}")
+        return False, err_msg

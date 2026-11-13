@@ -187,7 +187,7 @@ class RequestPasswordResetOTPView(views.APIView):
         
         if not success:
             return Response(
-                {"error": "Failed to send verification code to your email. Please try again later."},
+                {"error": error_msg or "Failed to send verification code to your email. Please try again later."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

@@ -43,7 +43,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const errorMsg = data.error?.message || data.detail || 'An unexpected error occurred.';
+    const errorMsg =
+      (typeof data.error === 'string' ? data.error : data.error?.message) ||
+      data.detail ||
+      data.message ||
+      (typeof data === 'string' ? data : 'An unexpected error occurred.');
     const error = new Error(errorMsg) as Error & { details?: any; code?: string };
     error.details = data.error?.details || data;
     error.code = data.error?.code || 'API_ERROR';
