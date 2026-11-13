@@ -197,14 +197,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          maxHeight: '90vh',
+          maxHeight: 'calc(100dvh - 24px)',
+          margin: 'auto',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div
           style={{
-            padding: '20px 24px',
+            padding: '16px 20px',
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
             alignItems: 'center',
@@ -212,29 +213,30 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.5) 100%)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div
               style={{
-                width: 44,
-                height: 44,
+                width: 38,
+                height: 38,
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                 color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: 700,
                 boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)',
+                flexShrink: 0,
               }}
             >
               {initial}
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#f8fafc' }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#f8fafc' }}>
                 Account & Profile Settings
               </h2>
-              <p style={{ margin: '2px 0 0', fontSize: 12, color: '#94a3b8' }}>
+              <p style={{ margin: '2px 0 0', fontSize: 11, color: '#94a3b8' }}>
                 {currentUser.email}
               </p>
             </div>
@@ -265,8 +267,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             display: 'flex',
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             backgroundColor: '#090d16',
-            padding: '0 16px',
-            gap: 8,
+            padding: '0 12px',
+            gap: 6,
+            overflowX: 'auto',
+            whiteSpace: 'nowrap',
           }}
         >
           <button
@@ -830,7 +834,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <a
-                href="mailto:mandlidevam9@gmail.com"
+                href="mailto:contact@skillforge.io"
                 style={{
                   fontSize: 11,
                   fontFamily: 'var(--font-mono)',
@@ -843,7 +847,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 }}
                 title="Contact Developer via Email"
               >
-                ✉️ mandlidevam9@gmail.com
+                ✉️ Contact Developer
               </a>
               <a
                 href="https://www.linkedin.com/in/devam-mandli"

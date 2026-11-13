@@ -740,12 +740,7 @@ export default function App() {
 
     try {
       const res = await api.auth.requestPasswordResetOtp(email.trim());
-      if (res.demo_otp) {
-        setForgotOtp(res.demo_otp);
-        setForgotSuccess(`Verification Code: ${res.demo_otp} (Auto-filled below for instant testing)`);
-      } else {
-        setForgotSuccess(res.message || 'Verification code sent to your email. Please check your inbox & spam folder.');
-      }
+      setForgotSuccess(res.message || 'Verification code sent to your email. Please check your inbox & spam folder.');
       setForgotStep('otp');
       setForgotCountdown(600); // 10 minutes
     } catch (err: any) {
@@ -1233,67 +1228,73 @@ export default function App() {
   // =========================================================================
   if (currentUser) {
     return (
-      <div style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', background: 'var(--bg-deep)', overflow: 'hidden' }}>
+      <div style={{ height: '100dvh', width: '100%', maxWidth: '100vw', display: 'flex', flexDirection: 'column', background: 'var(--bg-deep)', overflow: 'hidden' }}>
         {renderNetworkStatus()}
         <div className="ambient-bg-grid"></div>
 
         {/* TOP WORKSPACE APPLICATION BAR - CLEAN & PROFESSIONAL */}
         <header
           style={{
-            height: 58,
+            height: isMobile ? 52 : 58,
             background: 'rgba(11, 15, 25, 0.96)',
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            padding: '0 24px',
+            padding: isMobile ? '0 12px' : '0 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexShrink: 0,
             position: 'relative',
             zIndex: 100,
+            width: '100%',
+            maxWidth: '100vw',
+            boxSizing: 'border-box',
           }}
         >
           {/* Brand & Track Info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10 }}>
               <div
                 style={{
-                  width: 30,
-                  height: 30,
+                  width: isMobile ? 26 : 30,
+                  height: isMobile ? 26 : 30,
                   borderRadius: 8,
                   background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 14,
+                  fontSize: isMobile ? 12 : 14,
                   color: '#ffffff',
                   boxShadow: '0 0 16px rgba(99, 102, 241, 0.35)',
+                  flexShrink: 0,
                 }}
               >
                 ⚡
               </div>
-              <span style={{ fontWeight: 800, fontSize: 17, color: '#ffffff', letterSpacing: '-0.02em' }}>
+              <span style={{ fontWeight: 800, fontSize: isMobile ? 15 : 17, color: '#ffffff', letterSpacing: '-0.02em' }}>
                 SkillForge
               </span>
             </div>
 
-            <div style={{ height: 18, width: 1, background: 'rgba(255, 255, 255, 0.1)' }}></div>
+            <div style={{ height: 16, width: 1, background: 'rgba(255, 255, 255, 0.1)' }}></div>
 
             {/* Clean Track Dropdown Selector */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 6,
                 background: 'rgba(255, 255, 255, 0.04)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
-                padding: '4px 10px',
+                padding: '3px 8px',
                 borderRadius: 8,
               }}
             >
-              <LanguageIcon name={selectedTrack} size={15} style={{ marginRight: 2 }} />
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                Track:
-              </span>
+              <LanguageIcon name={selectedTrack} size={14} style={{ marginRight: 2 }} />
+              {!isMobile && (
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                  Track:
+                </span>
+              )}
               <select
                 value={selectedTrack}
                 onChange={(e) => setSelectedTrack(e.target.value)}
@@ -1302,7 +1303,7 @@ export default function App() {
                   border: 'none',
                   color: '#ffffff',
                   fontWeight: 700,
-                  fontSize: 13,
+                  fontSize: isMobile ? 12 : 13,
                   cursor: 'pointer',
                   outline: 'none',
                 }}
@@ -1350,14 +1351,14 @@ export default function App() {
           </div>
 
           {/* User Profile & Connection Status (No noisy DB badge) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14 }}>
             <div
               onClick={() => setProfileModalOpen(true)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 9,
-                padding: '4px 10px',
+                gap: 6,
+                padding: isMobile ? '3px 6px' : '4px 10px',
                 borderRadius: 8,
                 background: 'rgba(255, 255, 255, 0.04)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -1378,38 +1379,45 @@ export default function App() {
                   fontSize: 11,
                   fontWeight: 700,
                   color: '#ffffff',
+                  flexShrink: 0,
                 }}
               >
                 {(currentUser.profile?.display_name || currentUser.email)[0].toUpperCase()}
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#ffffff' }}>
-                {currentUser.profile?.display_name || currentUser.email.split('@')[0]}
-              </span>
-              <span className="tag-badge tag-emerald" style={{ padding: '1px 6px', fontSize: 9 }}>
-                {currentUser.profile?.initial_skill_level || 'STUDENT'}
-              </span>
+              {!isMobile && (
+                <>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#ffffff' }}>
+                    {currentUser.profile?.display_name || currentUser.email.split('@')[0]}
+                  </span>
+                  <span className="tag-badge tag-emerald" style={{ padding: '1px 6px', fontSize: 9 }}>
+                    {currentUser.profile?.initial_skill_level || 'STUDENT'}
+                  </span>
+                </>
+              )}
             </div>
 
-            <button
-              onClick={() => setProfileModalOpen(true)}
-              style={{
-                background: 'rgba(16, 185, 129, 0.08)',
-                border: '1px solid rgba(16, 185, 129, 0.25)',
-                color: '#10b981',
-                padding: '5px 12px',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-              }}
-              title="Account & Profile Settings"
-            >
-              <span>👤</span> Profile
-            </button>
+            {!isMobile && (
+              <button
+                onClick={() => setProfileModalOpen(true)}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                  color: '#10b981',
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+                title="Account & Profile Settings"
+              >
+                <span>👤</span> Profile
+              </button>
+            )}
 
             <button
               onClick={handleLogout}
@@ -1417,12 +1425,13 @@ export default function App() {
                 background: 'rgba(244, 63, 94, 0.08)',
                 border: '1px solid rgba(244, 63, 94, 0.25)',
                 color: '#fb7185',
-                padding: '5px 12px',
+                padding: isMobile ? '4px 8px' : '5px 12px',
                 borderRadius: 6,
-                fontSize: 12,
+                fontSize: isMobile ? 11 : 12,
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap',
               }}
             >
               Sign Out
@@ -1438,47 +1447,49 @@ export default function App() {
               {/* Studio Telemetry & Session Sub-Header */}
               <div
                 style={{
-                  height: 48,
+                  height: isMobile ? 42 : 48,
                   borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                   background: 'rgba(15, 23, 42, 0.85)',
                   backdropFilter: 'blur(12px)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '0 24px',
+                  padding: isMobile ? '0 12px' : '0 24px',
                   flexShrink: 0,
+                  width: '100%',
+                  boxSizing: 'border-box',
                 }}
               >
                 {/* Left: Breadcrumbs & Status */}
                 {activeSession ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: isMobile ? 12 : 13, fontWeight: 600, color: '#ffffff' }}>
                       <span style={{ color: 'var(--text-muted)' }}>{selectedTrack}</span>
                       <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>/</span>
-                      <span style={{ color: '#c0c1ff' }}>
+                      <span style={{ color: '#c0c1ff', maxWidth: isMobile ? 110 : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {currentSessionChallenge?.challenge.topic_name || activeSession.topic_name || 'Mixed Track'}
                       </span>
                     </div>
 
-                    <span className="tag-badge tag-emerald" style={{ fontSize: 10, padding: '2px 8px' }}>
-                      {currentSessionChallenge?.challenge.difficulty || activeSession.difficulty_mode}
-                    </span>
+                    {!isMobile && (
+                      <span className="tag-badge tag-emerald" style={{ fontSize: 10, padding: '2px 8px' }}>
+                        {currentSessionChallenge?.challenge.difficulty || activeSession.difficulty_mode}
+                      </span>
+                    )}
 
-                    <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', background: 'rgba(255, 255, 255, 0.04)', padding: '2px 8px', borderRadius: 4 }}>
-                      Problem {currentSessionChallenge ? currentSessionChallenge.question_order : 1} of {currentSessionChallenge ? currentSessionChallenge.total_questions : activeSession.requested_question_count}
+                    <span style={{ fontSize: isMobile ? 10 : 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', background: 'rgba(255, 255, 255, 0.04)', padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap' }}>
+                      {isMobile
+                        ? `#${currentSessionChallenge ? currentSessionChallenge.question_order : 1}/${currentSessionChallenge ? currentSessionChallenge.total_questions : activeSession.requested_question_count}`
+                        : `Problem ${currentSessionChallenge ? currentSessionChallenge.question_order : 1} of ${currentSessionChallenge ? currentSessionChallenge.total_questions : activeSession.requested_question_count}`}
                     </span>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span className="tag-badge tag-indigo" style={{ fontSize: 10, padding: '3px 8px' }}>
-                      {selectedTrack.toUpperCase()} TRACK
+                  <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10 }}>
+                    <span className="tag-badge tag-indigo" style={{ fontSize: 10, padding: '2px 6px' }}>
+                      {selectedTrack.toUpperCase()}
                     </span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: isMobile ? 12 : 13, fontWeight: 600, color: 'var(--text-muted)' }}>
                       Practice Studio
-                    </span>
-                    <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>/</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#c0c1ff' }}>
-                      Free Practice Studio
                     </span>
                   </div>
                 )}
@@ -1636,7 +1647,7 @@ export default function App() {
               )}
 
               {/* Main Dual Split Pane */}
-              <div style={{ flex: 1, display: 'flex', overflow: 'hidden', paddingBottom: isMobile && activeSession ? 104 : 0 }}>
+              <div style={{ flex: 1, display: 'flex', overflow: 'hidden', paddingBottom: isMobile ? (activeSession ? 104 : 64) : 0, width: '100%', maxWidth: '100vw' }}>
               {/* Left Column: Problem & Instructions or Free Practice Launcher */}
               <div
                 style={{
@@ -1646,7 +1657,8 @@ export default function App() {
                   background: 'rgba(8, 12, 26, 0.75)',
                   flexDirection: 'column',
                   overflowY: 'auto',
-                  padding: isMobile ? '16px' : '24px 28px',
+                  padding: isMobile ? '16px 14px' : '24px 28px',
+                  boxSizing: 'border-box',
                 }}
               >
                 {isLoadingChallenge ? (
@@ -1664,7 +1676,7 @@ export default function App() {
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 999, background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)', color: '#c0c1ff', fontSize: 11, fontWeight: 600, marginBottom: 12 }}>
                         <span>⚡</span> 100% FREE AI PRACTICE STUDIO
                       </div>
-                      <h2 style={{ fontSize: 24, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 8px 0' }}>
+                      <h2 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 8px 0' }}>
                         Start Practicing for Free
                       </h2>
                       <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
@@ -1677,7 +1689,7 @@ export default function App() {
                       <label style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>
                         1. Select Language Track
                       </label>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: 8 }}>
                         {['Python', 'JavaScript', 'Java', 'C++', 'C'].map((lang) => {
                           const isSel = selectedTrack.toLowerCase() === lang.toLowerCase();
                           return (
@@ -1721,7 +1733,7 @@ export default function App() {
                       <label style={{ display: 'block', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: 8 }}>
                         2. Practice Mode
                       </label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
                         <button
                           type="button"
                           onClick={() => setSessionType('TOPIC')}
@@ -5065,39 +5077,45 @@ export default function App() {
           background: 'rgba(5, 8, 20, 0.85)',
           backdropFilter: 'blur(20px)',
           borderBottom: '1px solid var(--border-subtle)',
-          padding: '0 32px',
-          height: 72,
+          padding: isMobile ? '0 14px' : '0 32px',
+          height: isMobile ? 60 : 72,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          width: '100%',
+          maxWidth: '100vw',
+          boxSizing: 'border-box',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 14 }}>
           <div
             style={{
-              width: 38,
-              height: 38,
-              borderRadius: 10,
+              width: isMobile ? 32 : 38,
+              height: isMobile ? 32 : 38,
+              borderRadius: 8,
               background: 'var(--gradient-brand)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 0 20px rgba(168, 85, 247, 0.4)',
+              flexShrink: 0,
             }}
           >
-            <span style={{ fontSize: 18, color: '#ffffff' }}>⚡</span>
+            <span style={{ fontSize: isMobile ? 15 : 18, color: '#ffffff' }}>⚡</span>
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.03em', color: '#ffffff' }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: isMobile ? 17 : 20, letterSpacing: '-0.03em', color: '#ffffff' }}>
               SkillForge
             </div>
-            <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', letterSpacing: '0.06em' }}>
-              AI ADAPTIVE PLATFORM
-            </div>
+            {!isMobile && (
+              <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', letterSpacing: '0.06em' }}>
+                AI ADAPTIVE PLATFORM
+              </div>
+            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+        <div className="desktop-only-nav" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           <a href="#tracks" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>
             Practice Tracks
           </a>
@@ -5106,18 +5124,18 @@ export default function App() {
           </a>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => openAuth('signin')} className="btn-secondary-glass" style={{ padding: '9px 18px', fontSize: 13 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
+          <button onClick={() => openAuth('signin')} className="btn-secondary-glass" style={{ padding: isMobile ? '7px 12px' : '9px 18px', fontSize: isMobile ? 12 : 13 }}>
             Sign In
           </button>
-          <button onClick={() => openAuth('signup')} className="btn-primary-gradient" style={{ padding: '9px 20px', fontSize: 13 }}>
-            Start Practicing Free →
+          <button onClick={() => openAuth('signup')} className="btn-primary-gradient" style={{ padding: isMobile ? '7px 14px' : '9px 20px', fontSize: isMobile ? 12 : 13, whiteSpace: 'nowrap' }}>
+            {isMobile ? 'Start Free →' : 'Start Practicing Free →'}
           </button>
         </div>
       </nav>
 
       {/* HERO SECTION */}
-      <section style={{ position: 'relative', zIndex: 10, padding: '70px 24px 50px', maxWidth: 1240, margin: '0 auto', width: '100%' }}>
+      <section style={{ position: 'relative', zIndex: 10, padding: isMobile ? '36px 14px 30px' : '70px 24px 50px', maxWidth: 1240, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ textAlign: 'center', maxWidth: 860, margin: '0 auto 40px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
             <span className="tag-badge tag-indigo">
@@ -5131,7 +5149,7 @@ export default function App() {
           <h1
             style={{
               fontFamily: 'var(--font-heading)',
-              fontSize: 'clamp(34px, 5vw, 60px)',
+              fontSize: 'clamp(28px, 5vw, 60px)',
               fontWeight: 900,
               lineHeight: 1.15,
               letterSpacing: '-0.035em',
@@ -5146,7 +5164,7 @@ export default function App() {
 
           <p
             style={{
-              fontSize: 'clamp(15px, 1.8vw, 18px)',
+              fontSize: 'clamp(14px, 1.8vw, 18px)',
               color: 'var(--text-muted)',
               lineHeight: 1.6,
               maxWidth: 700,
@@ -5156,28 +5174,28 @@ export default function App() {
             Practice Python, C++, Java, JavaScript, and C with intelligent problem synthesis, surgical invariant code analysis, and evidence-based adaptive skill calibration.
           </p>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <button onClick={() => openAuth('signup')} className="btn-primary-gradient" style={{ fontSize: 15, padding: '15px 32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? 10 : 16, flexWrap: 'wrap' }}>
+            <button onClick={() => openAuth('signup')} className="btn-primary-gradient" style={{ fontSize: isMobile ? 14 : 15, padding: isMobile ? '12px 24px' : '15px 32px' }}>
               Create Free Account →
             </button>
-            <button onClick={() => openAuth('signin')} className="btn-secondary-glass" style={{ fontSize: 15, padding: '15px 28px' }}>
+            <button onClick={() => openAuth('signin')} className="btn-secondary-glass" style={{ fontSize: isMobile ? 14 : 15, padding: isMobile ? '12px 20px' : '15px 28px' }}>
               Sign In to SkillForge
             </button>
           </div>
         </div>
 
         {/* Hero Interactive Code & Review Showcase */}
-        <div id="interactive-demo" className="forge-card forge-card-glow" style={{ padding: 0, overflow: 'hidden' }}>
+        <div id="interactive-demo" className="forge-card forge-card-glow" style={{ padding: 0, overflow: 'hidden', width: '100%' }}>
           <div
             style={{
               background: 'rgba(8, 12, 26, 0.95)',
               borderBottom: '1px solid var(--border-subtle)',
-              padding: '12px 20px',
+              padding: isMobile ? '10px 14px' : '12px 20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               flexWrap: 'wrap',
-              gap: 12,
+              gap: 10,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -5186,27 +5204,28 @@ export default function App() {
                 <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }}></span>
                 <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981' }}></span>
               </div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-dim)', marginLeft: 8 }}>
-                SkillForge Interactive Review Studio
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: isMobile ? 11 : 12, color: 'var(--text-dim)', marginLeft: 4 }}>
+                {isMobile ? 'Review Studio' : 'SkillForge Interactive Review Studio'}
               </span>
             </div>
 
-            <div style={{ display: 'flex', gap: 6, background: 'rgba(18, 26, 56, 0.7)', padding: 3, borderRadius: 8 }}>
+            <div style={{ display: 'flex', gap: 4, background: 'rgba(18, 26, 56, 0.7)', padding: 3, borderRadius: 8, overflowX: 'auto', maxWidth: '100%' }}>
               {(['python', 'cpp', 'java', 'javascript'] as const).map((langKey) => (
                 <button
                   key={langKey}
                   onClick={() => setHeroSnippetTab(langKey)}
                   style={{
-                    padding: '6px 14px',
+                    padding: isMobile ? '4px 8px' : '6px 14px',
                     borderRadius: 6,
                     fontFamily: 'var(--font-mono)',
-                    fontSize: 12,
+                    fontSize: isMobile ? 11 : 12,
                     fontWeight: 600,
                     cursor: 'pointer',
                     background: heroSnippetTab === langKey ? 'var(--gradient-brand)' : 'transparent',
                     color: heroSnippetTab === langKey ? '#ffffff' : 'var(--text-muted)',
                     border: 'none',
                     transition: 'all 0.2s',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {langKey.toUpperCase()}
@@ -5215,16 +5234,16 @@ export default function App() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', background: 'var(--bg-terminal)' }}>
-            <div style={{ padding: '28px', borderRight: '1px solid var(--border-subtle)', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(360px, 1fr))', background: 'var(--bg-terminal)', width: '100%' }}>
+            <div style={{ padding: isMobile ? '16px 14px' : '28px', borderRight: isMobile ? 'none' : '1px solid var(--border-subtle)', borderBottom: isMobile ? '1px solid var(--border-subtle)' : 'none', fontFamily: 'var(--font-mono)', overflowX: 'auto', width: '100%', boxSizing: 'border-box' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, fontSize: 12, color: 'var(--text-dim)' }}>
                 <span>📄 {currentSnippet.filename}</span>
                 <span style={{ color: 'var(--accent-cyan)' }}>{currentSnippet.lang}</span>
               </div>
-              <div style={{ lineHeight: 1.8, fontSize: 13, color: '#e2e8f0' }}>
+              <div style={{ lineHeight: 1.8, fontSize: isMobile ? 12 : 13, color: '#e2e8f0', overflowX: 'auto' }}>
                 {currentSnippet.code.map((line, idx) => (
                   <div key={idx} style={{ display: 'flex' }}>
-                    <span style={{ width: 32, color: 'var(--text-dim)', opacity: 0.5, userSelect: 'none' }}>
+                    <span style={{ width: 28, color: 'var(--text-dim)', opacity: 0.5, userSelect: 'none', flexShrink: 0 }}>
                       {String(idx + 1).padStart(2, '0')}
                     </span>
                     <span style={{ whiteSpace: 'pre' }}>{line}</span>
@@ -5233,43 +5252,43 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ padding: '28px', background: 'rgba(11, 17, 38, 0.7)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div style={{ padding: isMobile ? '18px 14px' : '28px', background: 'rgba(11, 17, 38, 0.7)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', width: '100%', boxSizing: 'border-box' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <span className="tag-badge tag-emerald">✦ AUTOMATED INVARIANT EVALUATION</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-emerald)', fontWeight: 700 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                  <span className="tag-badge tag-emerald" style={{ fontSize: isMobile ? 10 : 11 }}>✦ AUTOMATED INVARIANT EVALUATION</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-emerald)', fontWeight: 700 }}>
                     Confidence 98.4%
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 14 }}>
-                  <span style={{ fontSize: 44, fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#ffffff' }}>
+                  <span style={{ fontSize: isMobile ? 36 : 44, fontWeight: 900, fontFamily: 'var(--font-heading)', color: '#ffffff' }}>
                     {currentSnippet.score}
                   </span>
-                  <span style={{ fontSize: 16, color: 'var(--text-dim)', fontWeight: 600 }}>/ 100</span>
+                  <span style={{ fontSize: 14, color: 'var(--text-dim)', fontWeight: 600 }}>/ 100</span>
                   <span className="tag-badge tag-indigo" style={{ marginLeft: 'auto' }}>
                     {currentSnippet.complexity}
                   </span>
                 </div>
 
-                <div style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-emerald)', fontWeight: 700, marginBottom: 4 }}>
+                <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', marginBottom: 14 }}>
+                  <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--accent-emerald)', fontWeight: 700, marginBottom: 4 }}>
                     VERIFIED STRENGTH
                   </div>
-                  <div style={{ fontSize: 13, color: '#f1f5f9' }}>{currentSnippet.feedback}</div>
+                  <div style={{ fontSize: 12, color: '#f1f5f9', lineHeight: 1.5 }}>{currentSnippet.feedback}</div>
                 </div>
 
-                <div style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
-                  <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-indigo)', fontWeight: 700, marginBottom: 4 }}>
+                <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                  <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--accent-indigo)', fontWeight: 700, marginBottom: 4 }}>
                     ADAPTIVE PROGRESSION
                   </div>
-                  <div style={{ fontSize: 13, color: '#f1f5f9' }}>
+                  <div style={{ fontSize: 12, color: '#f1f5f9', lineHeight: 1.5 }}>
                     Linear complexity mastered. Calibrating next adaptive challenge toward Hard-tier space-constrained variants.
                   </div>
                 </div>
               </div>
 
-              <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-dim)' }}>
+              <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-dim)', flexWrap: 'wrap', gap: 6 }}>
                 <span>Estimated Score (Review Rubric)</span>
                 <span style={{ color: 'var(--accent-cyan)' }}>Evidence Recorded to Topic Skill</span>
               </div>
@@ -5279,20 +5298,20 @@ export default function App() {
       </section>
 
       {/* TRACKS SECTION */}
-      <section id="tracks" style={{ position: 'relative', zIndex: 10, padding: '50px 24px 70px', maxWidth: 1240, margin: '0 auto', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+      <section id="tracks" style={{ position: 'relative', zIndex: 10, padding: isMobile ? '36px 14px 44px' : '50px 24px 70px', maxWidth: 1240, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ textAlign: 'center', marginBottom: 30 }}>
           <span className="tag-badge tag-indigo" style={{ marginBottom: 12 }}>
             LANGUAGES & TOPIC TAXONOMY
           </span>
-          <h2 style={{ fontSize: 32, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.025em' }}>
+          <h2 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.025em' }}>
             5 Core Engineering Tracks
           </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 6 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 6 }}>
             Topic skills are language-isolated. C pointers and Python references are tracked independently.
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
           {[
             { name: 'Python', desc: 'Core syntax, dictionaries, OOP principles, exception handling & file I/O' },
             { name: 'C++', desc: 'Pass-by-reference, class invariants, RAII smart pointers & STL' },
@@ -5382,7 +5401,7 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
               {/* Email Link */}
               <a
-                href="mailto:mandlidevam9@gmail.com"
+                href="mailto:contact@skillforge.io"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -5397,10 +5416,10 @@ export default function App() {
                   textDecoration: 'none',
                   transition: 'all 0.2s ease',
                 }}
-                title="Send Email to Devam Mandli"
+                title="Send Email to Developer"
               >
                 <span>✉️</span>
-                <span>mandlidevam9@gmail.com</span>
+                <span>Contact Developer</span>
               </a>
 
               {/* LinkedIn Link */}
@@ -5493,7 +5512,7 @@ export default function App() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div style={{ height: 3, width: '100%', background: 'var(--gradient-brand)' }}></div>
 
-            <div style={{ padding: '32px 28px' }}>
+            <div style={{ padding: isMobile ? '20px 16px' : '32px 28px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div>
                   <h3 style={{ fontSize: 22, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>

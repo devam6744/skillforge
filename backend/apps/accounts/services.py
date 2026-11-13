@@ -144,16 +144,8 @@ def send_password_reset_otp_email(user, otp: str, expires_minutes: int = 10) -> 
         )
 
         if not has_smtp_creds:
-            logger.warning(
-                f"[SMTP Notice] EMAIL_HOST_PASSWORD not set. Providing OTP for {user.email}: {otp}"
-            )
-            print("\n==========================================")
-            print(f"[EMAIL NOTICE] To: {user.email}")
-            print(f"Password Reset OTP: {otp}")
-            print(f"Expires in: {expires_minutes} minutes")
-            print("Set EMAIL_HOST_PASSWORD in Vercel/env to enable direct inbox delivery.")
-            print("==========================================\n")
-            return True, "FALLBACK_DEMO"
+            logger.error("[SMTP Error] EMAIL_HOST_USER or EMAIL_HOST_PASSWORD not configured.")
+            return False, "SMTP credentials not configured."
 
         send_mail(
             subject=subject,
@@ -165,8 +157,5 @@ def send_password_reset_otp_email(user, otp: str, expires_minutes: int = 10) -> 
         )
         return True, None
     except Exception as e:
-        logger.error(f"Failed to send OTP email to {user.email}: {e}")
-        print(f"\n[SMTP EXCEPTION] Failed to send email via SMTP ({e}).")
-        print(f"[FALLBACK OTP] For {user.email}: {otp}\n")
-        # In cloud demo / resilience, do not block users with 500
-        return True, "FALLBACK_DEMO"
+        logger.error(f"Failed to send OTP email: {e}")
+        return False, str(e)

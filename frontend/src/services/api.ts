@@ -80,7 +80,7 @@ export const api = {
       }),
     me: () => request<{ user: User }>('/auth/me/'),
     requestPasswordResetOtp: (email: string) =>
-      request<{ message: string; email: string; expires_in_minutes: number; demo_otp?: string; notice?: string }>('/auth/password-reset/request-otp/', {
+      request<{ message: string; email: string; expires_in_minutes: number }>('/auth/password-reset/request-otp/', {
         method: 'POST',
         body: JSON.stringify({ email }),
       }),

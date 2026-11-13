@@ -187,27 +187,32 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 8, 20, 0.85);
+  background: rgba(5, 8, 20, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: 16px;
   animation: fadeIn 0.2s ease-out;
+  overflow-y: auto;
 }
 
 .modal-content {
-  background: rgba(13, 19, 42, 0.95);
+  background: rgba(13, 19, 42, 0.98);
   border: 1px solid var(--border-bright);
-  border-radius: 20px;
+  border-radius: 18px;
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), 0 0 40px -10px rgba(99, 102, 241, 0.35);
   width: 100%;
   max-width: 520px;
-  overflow: hidden;
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
   animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  margin: auto;
 }
 
 @keyframes fadeIn {
@@ -428,8 +433,29 @@ body {
   }
 
   .code-editor-statusbar {
-    padding: 4px 10px !important;
+    padding: 4px 8px !important;
     font-size: 10px !important;
+  }
+
+  .code-editor-gutter {
+    width: 32px !important;
+    padding: 12px 4px 12px 2px !important;
+    font-size: 11px !important;
+  }
+
+  .code-editor-textarea {
+    padding: 12px 8px !important;
+    font-size: 12px !important;
+    line-height: 1.6 !important;
+  }
+
+  .modal-overlay {
+    padding: 8px !important;
+  }
+
+  .modal-content {
+    max-height: calc(100dvh - 16px) !important;
+    border-radius: 14px !important;
   }
 }
 
